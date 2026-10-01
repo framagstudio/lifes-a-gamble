@@ -1,0 +1,164 @@
+<div id="scene">
+  <div class="bg"></div>
+  <div class="shelves"></div>
+  <div class="slash a"></div><div class="slash b"></div>
+  <div class="lamp"></div>
+  <div class="neon">LA DERNIÈRE BALLE</div>
+  <header class="topbar">
+    <div class="mini-logo ransom" id="minilogo"></div>
+    <div class="topmid">
+      <div class="round"><span id="roundlbl">MANCHE 1</span></div>
+      <div class="netpill" id="netpill" hidden></div>
+    </div>
+    <div class="tools">
+      <button class="ibtn" id="btn-sound" aria-label="Couper ou remettre le son" title="Son"></button>
+      <button class="ibtn" id="btn-rules" aria-label="Règles" title="Règles"><span style="transform:skew(10deg)">?</span></button>
+      <button class="ibtn" id="btn-menu" aria-label="Quitter vers le menu" title="Menu"><svg viewBox="0 0 20 20"><path d="M3 5h14M3 10h14M3 15h14" stroke="currentColor" stroke-width="2.5" fill="none"/></svg></button>
+    </div>
+  </header>
+  <div class="table">
+    <div class="tcenter">
+      <div class="tablecard" id="tablecard"></div>
+      <div class="pile" id="pile"></div>
+      <div class="claims" id="claims"></div>
+    </div>
+  </div>
+  <div class="seat" id="seat0"></div>
+  <div class="seat" id="seat1"></div>
+  <div class="seat" id="seat2"></div>
+  <div class="seat" id="seat3"></div>
+  <div id="log" aria-live="polite"></div>
+  <div class="me">
+    <div class="handcol">
+      <div id="prompt" aria-live="assertive"></div>
+      <div id="hand"></div>
+    </div>
+  </div>
+</div>
+<svg id="aim"></svg>
+<div id="flash"></div>
+<div id="shotbox"></div>
+<div id="reveal" hidden></div>
+<div id="cutin" hidden></div>
+<div id="bubbles"></div>
+
+<section class="screen" id="scr-title">
+  <div class="inner">
+    <div class="logo ransom" id="biglogo"></div>
+    <div class="tagline"><span>Mode LIAR · 4 places · 12 cartes · 6 chambres</span></div>
+    <div class="title-cast" id="titlecast"></div>
+    <div class="menu-col">
+      <button class="btn red" id="btn-host"><span>CRÉER UN SALON</span></button>
+      <button class="btn red" id="btn-join"><span>REJOINDRE UN SALON</span></button>
+      <button class="btn" id="btn-solo"><span>SOLO CONTRE 3 IA</span></button>
+      <button class="btn dark" id="btn-rules2"><span>RÈGLES</span></button>
+    </div>
+  </div>
+</section>
+
+<section class="screen" id="scr-select" hidden>
+  <div class="inner">
+    <div class="sel-head ransom" id="selhead"></div>
+    <div class="picks" id="picks"></div>
+    <div class="row">
+      <button class="btn red" id="btn-go" disabled><span>S’ASSEOIR À LA TABLE</span></button>
+      <button class="btn dark" id="btn-back"><span>RETOUR</span></button>
+    </div>
+  </div>
+</section>
+
+<section class="screen" id="scr-profile" hidden>
+  <form class="inner" id="prof-form" autocomplete="off" novalidate>
+    <div class="sel-head ransom" id="profhead"></div>
+    <div class="field" id="f-code-wrap">
+      <label for="f-code">CODE DU SALON</label>
+      <input id="f-code" class="code" inputmode="text" maxlength="4" placeholder="K7QX" autocapitalize="characters" spellcheck="false">
+    </div>
+    <div class="field">
+      <label for="f-name">TON PSEUDO</label>
+      <input id="f-name" maxlength="14" placeholder="Ton nom à la table" spellcheck="false">
+    </div>
+    <div class="err" id="prof-err" role="alert"></div>
+    <div class="busy" id="prof-busy" aria-live="polite"></div>
+    <div class="row">
+      <button class="btn red" id="btn-prof-go" type="submit"><span>OUVRIR LE SALON</span></button>
+      <button class="btn dark" id="btn-prof-back" type="button"><span>RETOUR</span></button>
+    </div>
+  </form>
+</section>
+
+<section class="screen" id="scr-lobby" hidden>
+  <div class="inner">
+    <div class="sel-head ransom" id="lobhead"></div>
+    <div class="lobby">
+      <div class="codecard" id="lob-codecard">
+        <span class="k">CODE DU SALON</span>
+        <div class="code ransom" id="lob-code"></div>
+        <div id="qr" aria-label="QR code du lien du salon"></div>
+        <span class="k">OU PARTAGE CE LIEN</span>
+        <div class="link" id="lob-link"></div>
+        <button class="btn" id="btn-copy" type="button"><span>COPIER LE LIEN</span></button>
+      </div>
+      <div class="codecard waitcard" id="lob-wait" hidden>
+        <span class="k">TU ES DANS LE SALON</span>
+        <div class="code" id="lob-wcode"></div>
+        <p>En attente de l’hôte… La partie démarre dès qu’il ferme le salon.</p>
+      </div>
+      <div class="lobmain">
+        <h3>À LA TABLE</h3>
+        <div class="slots" id="slots"></div>
+        <h3>TON PERSONNAGE</h3>
+        <div class="cpick" id="cpick"></div>
+        <p class="lob-note" id="lob-note"></p>
+      </div>
+    </div>
+    <div class="row">
+      <button class="btn red" id="btn-lobby-go"><span>FERMER LE SALON ET JOUER</span></button>
+      <button class="btn dark" id="btn-lobby-quit"><span>QUITTER</span></button>
+    </div>
+  </div>
+</section>
+
+<section class="screen" id="scr-end" hidden>
+  <div class="inner">
+    <div class="logo ransom" id="endtitle"></div>
+    <div class="end-pic" id="endpic"></div>
+    <div class="end-sub" id="endsub"></div>
+    <div class="row" id="endbtns"></div>
+  </div>
+</section>
+
+<section class="screen" id="modal" hidden role="dialog" aria-modal="true" aria-labelledby="mtitle">
+  <div class="inner">
+    <div class="logo small ransom" id="mtitle"></div>
+    <div class="end-pic" id="mpic"></div>
+    <div class="end-sub" id="msub"></div>
+    <div class="row" id="mbtns"></div>
+  </div>
+</section>
+
+<div id="rules" hidden>
+  <div class="panel">
+    <button class="btn red close" id="btn-rclose"><span>FERMER</span></button>
+    <h2>LIAR</h2>
+    <p>Bluffe, démasque, survis. Le dernier joueur debout gagne la partie.</p>
+    <h3>LE PAQUET</h3>
+    <ul><li>12 cartes : 5 Rois, 5 Reines, 1 Maître, 1 Chaos.</li><li>Chaque survivant reçoit 3 cartes au début de la manche.</li><li>La manche annonce une carte de table : Rois ou Reines.</li></ul>
+    <h3>TON TOUR</h3>
+    <ul><li>Pose une carte face cachée en annonçant la carte de table.</li><li>Tu peux mentir. Le Maître et le Chaos sont toujours des mensonges.</li><li>Il n’existe que 5 cartes de chaque figure. Surveille le compteur d’annonces.</li></ul>
+    <h3>« MENTEUR ! »</h3>
+    <ul>
+      <li>Seul le <b>joueur suivant</b> peut accuser celui qui vient de poser. Sinon il laisse passer et joue à son tour.</li>
+      <li>Toute accusation termine la manche : on ramasse, on mélange et on redistribue.</li>
+      <li><b>Vérité</b> : l’accusateur retourne l’arme contre lui.</li>
+      <li><b>Mensonge</b> : l’accusateur tire sur le joueur de son choix.</li>
+      <li><b>Maître</b> : c’est celui qui l’a posée qui tire sur qui il veut.</li>
+      <li><b>Chaos</b> : tout le monde vise, compte à rebours, tirs simultanés.</li>
+    </ul>
+    <h3>LE REVOLVER</h3>
+    <ul><li>6 chambres, 1 balle réelle. Chaque tir à blanc rapproche la balle : 1/6, 1/5, 1/4…</li><li>Après une balle réelle, l’arme est rechargée.</li><li>Quand tu as le droit de tirer, tu as 9 secondes pour viser. Sinon, le tir se retourne contre toi.</li></ul>
+    <h3>EN LIGNE</h3>
+    <ul><li>L’hôte crée un salon et partage le code ou le lien. Jusqu’à 4 joueurs.</li><li>Quand l’hôte ferme le salon, les places vides sont prises par des IA.</li><li>L’hôte doit garder sa page ouverte : la partie tourne sur son appareil.</li><li>Si quelqu’un se déconnecte, une IA joue à sa place jusqu’à son retour.</li></ul>
+  </div>
+</div>
+<div id="wipe"></div>
