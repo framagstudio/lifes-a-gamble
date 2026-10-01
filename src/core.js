@@ -33,17 +33,33 @@ const CHARS=[
 const PASS_LINES=['Je passe.','Ça passe… pour cette fois.','Hm. D’accord.','Je te crois. Pour l’instant.'];
 
 /* ---------- modes de jeu ---------- */
+/* deck : composition du paquet · hand : cartes par joueur · maxPlay : cartes posées max par tour */
 const MODES=[
  {id:'chaos-liar',name:'CHAOS LIAR',color:'#e3122b',players:'1 à 4 joueurs · IA pour compléter',
-  pitch:'Bluffe sur des Rois et des Reines. Le joueur suivant peut crier « Menteur ! ». La carte Maître et la carte Chaos peuvent tout renverser.'}
+  pitch:'Bluffe sur des Rois et des Reines. Le joueur suivant peut crier « Menteur ! ». La carte Maître et la carte Chaos peuvent tout renverser.',
+  hand:3,maxPlay:1,tables:['ROI','REINE'],deck:{ROI:5,REINE:5,CHAOS:1,MAITRE:1}},
+ {id:'classic-liar',name:'CLASSIC LIAR',color:'#f2b33d',players:'1 à 4 joueurs · IA pour compléter',
+  pitch:'Le Liar d’origine : 5 cartes en main, tu poses de 1 à 3 cartes, les Jokers dépannent. Démasqué, tu passes à la roulette. Gare à la carte du Diable.',
+  hand:5,maxPlay:3,tables:['ROI','REINE','AS'],deck:{ROI:6,REINE:6,AS:6,JOKER:2,DIABLE:1}}
 ];
 const modeOf=id=>MODES.find(m=>m.id===id)||MODES[0];
+/* une carte dit vrai si c'est la figure de table, ou un Joker (Classic Liar) */
+const isTruthCard=(t,T)=>t===T||t==='JOKER';
+const truthTotal=(m,T)=>(m.deck[T]||0)+(m.deck.JOKER||0);
 
 /* ---------- cartes ---------- */
-const TYPES={ROI:{label:'ROI',plural:'ROIS',art:'un ROI'},REINE:{label:'REINE',plural:'REINES',art:'une REINE'},CHAOS:{label:'CHAOS'},MAITRE:{label:'MAÎTRE'}};
+const TYPES={ROI:{label:'ROI',plural:'ROIS',art:'un ROI'},REINE:{label:'REINE',plural:'REINES',art:'une REINE'},AS:{label:'AS',plural:'AS',art:'un AS'},
+  CHAOS:{label:'CHAOS'},MAITRE:{label:'MAÎTRE'},JOKER:{label:'JOKER'},DIABLE:{label:'DIABLE'}};
+const NUMW={1:'un',2:'deux',3:'trois'};
+/* « un ROI », « deux ROIS », « trois REINES » */
+const claimPhrase=(T,n=1)=>n<=1?TYPES[T].art:`${NUMW[n]||n} ${TYPES[T].plural}`;
+const claimSay=(T,n=1)=>n<=1?`C’est ${claimPhrase(T,1)} !`:`Ce sont ${claimPhrase(T,n)} !`;
 const ICONS={
  ROI:`<svg viewBox="0 0 60 60"><path d="M8 44 L5 16 L20 29 L30 8 L40 29 L55 16 L52 44Z" fill="#f2b33d" stroke="${O}" stroke-width="3.5" stroke-linejoin="round"/><rect x="8" y="44" width="44" height="8" fill="#e3122b" stroke="${O}" stroke-width="3.5"/><circle cx="30" cy="35" r="4" fill="#fbf7f4" stroke="${O}" stroke-width="2.5"/></svg>`,
  REINE:`<svg viewBox="0 0 60 60"><path d="M6 44 Q30 2 54 44 Q30 32 6 44Z" fill="#e3122b" stroke="${O}" stroke-width="3.5" stroke-linejoin="round"/><circle cx="30" cy="22" r="6.5" fill="#fbf7f4" stroke="${O}" stroke-width="3"/><circle cx="17" cy="33" r="3.5" fill="#f2b33d" stroke="${O}" stroke-width="2.5"/><circle cx="43" cy="33" r="3.5" fill="#f2b33d" stroke="${O}" stroke-width="2.5"/><path d="M8 50 Q30 40 52 50" fill="none" stroke="${O}" stroke-width="4" stroke-linecap="round"/></svg>`,
+ AS:`<svg viewBox="0 0 60 60"><path d="M30 5 C38 17 54 24 54 37 C54 46 45 50 37 45 C38 50 41 54 45 56 H15 C19 54 22 50 23 45 C15 50 6 46 6 37 C6 24 22 17 30 5Z" fill="${O}" stroke="${O}" stroke-width="2" stroke-linejoin="round"/><path d="M23 38 L30 18 L37 38 M26 31 H34" fill="none" stroke="#e3122b" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+ JOKER:`<svg viewBox="0 0 60 60"><path d="M8 46 L12 14 L24 32 L30 8 L36 32 L48 14 L52 46Z" fill="#8f5bff" stroke="${O}" stroke-width="3.5" stroke-linejoin="round"/><path d="M30 8 L36 32 L30 46Z" fill="#18c29c" stroke="${O}" stroke-width="2.5" stroke-linejoin="round"/><circle cx="12" cy="13" r="4.5" fill="#f2b33d" stroke="${O}" stroke-width="2.5"/><circle cx="30" cy="7" r="4.5" fill="#f2b33d" stroke="${O}" stroke-width="2.5"/><circle cx="48" cy="13" r="4.5" fill="#f2b33d" stroke="${O}" stroke-width="2.5"/><rect x="6" y="44" width="48" height="8" fill="#fbf7f4" stroke="${O}" stroke-width="3.5"/></svg>`,
+ DIABLE:`<svg viewBox="0 0 60 60"><path d="M15 22 Q8 10 12 3 Q18 12 24 16Z M45 22 Q52 10 48 3 Q42 12 36 16Z" fill="#fbf7f4" stroke="${O}" stroke-width="2.5" stroke-linejoin="round"/><circle cx="30" cy="34" r="20" fill="#e3122b" stroke="#fbf7f4" stroke-width="3"/><path d="M19 30 L27 33 M41 30 L33 33" stroke="${O}" stroke-width="4" stroke-linecap="round"/><path d="M20 41 Q30 50 40 41 L36 43 L33 40 L30 44 L27 40 L24 43Z" fill="#fbf7f4" stroke="${O}" stroke-width="2" stroke-linejoin="round"/></svg>`,
  MAITRE:`<svg viewBox="0 0 60 60"><circle cx="20" cy="21" r="12" fill="#fbf7f4" stroke="${O}" stroke-width="3.5"/><circle cx="20" cy="21" r="4.5" fill="${O}"/><path d="M28 29 L51 52 M43 44 L49 38 M47 48 L53 42" stroke="${O}" stroke-width="5.5" stroke-linecap="round"/></svg>`,
  CHAOS:`<svg viewBox="0 0 60 60"><polygon points="30,3 36,20 54,12 42,28 58,36 39,38 44,57 30,44 16,57 21,38 2,36 18,28 6,12 24,20" fill="#fbf7f4" stroke="${O}" stroke-width="3" stroke-linejoin="round"/><circle cx="30" cy="31" r="7" fill="${O}"/><circle cx="30" cy="31" r="2.5" fill="#e3122b"/></svg>`
 };
@@ -59,6 +75,8 @@ const HOOK={emit(){},sync(){},ask(){},cancelAsk(){}};
 const emit=ev=>HOOK.emit(ev);
 const sync=()=>HOOK.sync();
 const EP=i=>E.players[i];
+const MD=()=>modeOf(E.mode);
+const isClassic=()=>E.mode==='classic-liar';
 const newGun=()=>({bullet:Math.floor(Math.random()*6),fired:0});
 const risk=p=>1/(6-p.gun.fired);
 const aliveIdx=()=>E.players.filter(p=>p.alive).map(p=>p.i);
@@ -66,23 +84,24 @@ const aliveCount=()=>aliveIdx().length;
 function nextAlive(i){for(let k=1;k<=4;k++){const j=(i+k)%4;if(EP(j).alive)return j}return i}
 const othersOf=i=>aliveIdx().filter(j=>j!==i);
 function fireGun(p){const real=p.gun.fired===p.gun.bullet;p.gun.fired++;if(real)p.gun=newGun();return real}
-const line=(p,k,c)=>{const a=c?TYPES[c].art:'';return pick(p.ch.lines[k]).replace('{a}',a).replace('{A}',a.charAt(0).toUpperCase()+a.slice(1))};
+const line=(p,k,c,n=1)=>{const a=c?claimPhrase(c,n):'';return pick(p.ch.lines[k]).replace('{a}',a).replace('{A}',a.charAt(0).toUpperCase()+a.slice(1))};
+const playedBy=i=>E.pile.filter(e=>e.by===i);
 
 /* seats : [{name, ci, kind:'local'|'remote'|'ai', peer, token}] — index = place autour de la table */
 function engNew(seats,mode='chaos-liar'){
   E={players:seats.map((s,i)=>({i,name:s.name,ci:s.ci,ch:CHARS[s.ci],kind:s.kind,peer:s.peer||null,token:s.token||null,wasRemote:!!s.token,
       alive:true,hand:[],gun:newGun(),grudge:[0,0,0,0],caught:0,reveals:0,pending:null})),
-     mode:modeOf(mode).id,table:'ROI',claims:0,pile:[],revealed:[],round:0,starter:Math.floor(Math.random()*4),cur:-1,deciding:-1,over:false};
+     mode:modeOf(mode).id,table:'ROI',claims:0,pile:[],revealed:[],round:0,starter:Math.floor(Math.random()*4),nextStarter:null,cur:-1,deciding:-1,over:false};
 }
 /* état visible par la place v (seule SA main est envoyée) */
 function stateFor(v){
   return{mode:E.mode,round:E.round,table:E.table,claims:E.claims,cur:E.cur,deciding:E.deciding,over:E.over,
-    pile:E.pile.map(e=>({t:e.revealed?e.card.t:null,rot:e.rot,dx:e.dx,dy:e.dy})),
+    pile:E.pile.map(e=>({ts:e.revealed?e.cards.map(c=>c.t):null,n:e.cards.length,rot:e.rot,dx:e.dx,dy:e.dy})),
     players:E.players.map(p=>({name:p.name,ci:p.ci,alive:p.alive,n:p.hand.length,fired:p.gun.fired,ai:p.kind==='ai',rm:p.kind==='remote'})),
     hand:(v>=0&&v<4)?EP(v).hand.map(c=>c.t):[]};
 }
 
-/* ---------- IA ---------- */
+/* =================== IA — CHAOS LIAR =================== */
 function aiChooseCard(p){
   const h=p.hand,T=E.table,ai=p.ch.ai;
   const truths=[],lies=[];h.forEach((c,k)=>(c.t===T?truths:lies).push(k));
@@ -108,14 +127,18 @@ function aiChooseCard(p){
   if(lies.length>=2&&after<=2)lieP+=.15;
   return Math.random()<Math.min(.85,lieP)?pickLie():pick(truths);
 }
-/* Simule des centaines de mains possibles du joueur précédent à partir des cartes
-   que l'IA ne voit pas, rejoue ses poses de la manche avec sa tendance au bluff observée. */
-function estimatePlay(me,placer){
-  const T=E.table,counts={ROI:5,REINE:5,CHAOS:1,MAITRE:1};
-  [...me.hand,...E.pile.filter(e=>e.by===me.i).map(e=>e.card),...E.revealed].forEach(c=>counts[c.t]--);
+/* pool des cartes que l'IA ne voit pas (paquet du mode − sa main − ses cartes posées − cartes révélées) */
+function hiddenPool(me){
+  const counts={...MD().deck};
+  [...me.hand,...playedBy(me.i).flatMap(e=>e.cards),...E.revealed].forEach(c=>counts[c.t]--);
   const pool=[];for(const t in counts)for(let k=0;k<Math.max(0,counts[t]);k++)pool.push(t);
-  const L=EP(placer),plays=E.pile.filter(e=>e.by===placer).length;
-  const b=clamp((L.caught+.8)/(L.reveals+2.2),.12,.8);
+  return pool;
+}
+const bluffRate=L=>clamp((L.caught+.8)/(L.reveals+2.2),.12,.8);
+/* Simule des centaines de mains possibles du joueur précédent, rejoue ses poses de la manche. */
+function estimatePlay(me,placer){
+  const T=E.table,pool=hiddenPool(me);
+  const L=EP(placer),plays=playedBy(placer).length,b=bluffRate(L);
   const res={T:0,S:0,M:0,C:0},N=700;
   for(let s=0;s<N;s++){
     for(let i=0;i<3&&i<pool.length;i++){const j=i+Math.floor(Math.random()*(pool.length-i));[pool[i],pool[j]]=[pool[j],pool[i]]}
@@ -129,8 +152,7 @@ function estimatePlay(me,placer){
   }
   return{pT:res.T/N,pS:res.S/N,pM:res.M/N,pC:res.C/N};
 }
-/* Accuser ou laisser passer : comparaison des espérances des deux choix. */
-function aiShouldAccuse(p,placer){
+function aiShouldAccuseChaos(p,placer){
   const{pT,pS,pM,pC}=estimatePlay(p,placer);
   const n=aliveCount(),r=risk(p),ai=p.ch.ai,L=EP(placer),T=E.table;
   const Vd=10,Vk=n<=2?10:4+6/(n-1);
@@ -159,11 +181,96 @@ function aiPickTarget(p,ctx={}){
   return best;
 }
 
+/* =================== IA — CLASSIC LIAR =================== */
+/* Politique de pose : vérité la plupart du temps, bluff selon la personnalité,
+   carte du Diable jouée en appât quand une accusation devient probable. */
+function aiChooseClassic(p){
+  const h=p.hand,T=E.table,ai=p.ch.ai,m=MD();
+  const truths=[],lies=[],devil=[];
+  h.forEach((c,k)=>{if(c.t==='DIABLE')devil.push(k);else if(isTruthCard(c.t,T))truths.push(k);else lies.push(k)});
+  const r=risk(p),nxR=risk(EP(nextAlive(p.i)));
+  const exposed=clamp(E.claims/truthTotal(m,T),0,1);
+  if(devil.length){
+    const w=.12+exposed*.7+(!truths.length?.3:0)+(nxR<.25?.1:0);
+    if(h.length===1||Math.random()<w)return[devil[0]];
+  }
+  if(!truths.length){
+    if(!lies.length)return[devil[0]];
+    const n=Math.min(lies.length,Math.random()<.55?1:Math.random()<.7?2:3);
+    return shuffle(lies.slice()).slice(0,n);
+  }
+  let lieP=ai.bluff*.55*(lies.length/h.length+.2)*(1-exposed*.8);
+  if(r>=.34)lieP*=.55;
+  if(nxR>=.34)lieP*=1.3;
+  if(lies.length&&Math.random()<Math.min(.7,lieP)){
+    const n=Math.min(lies.length,Math.random()<.65?1:2);
+    const pickd=shuffle(lies.slice()).slice(0,n);
+    // parfois un vrai au milieu pour brouiller les pistes
+    if(pickd.length<3&&Math.random()<.3)pickd.push(truths[0]);
+    return pickd;
+  }
+  const ts=truths.slice().sort((a,b)=>(h[a].t==='JOKER')-(h[b].t==='JOKER'));
+  let n=1;if(ts.length>=2&&Math.random()<.5)n=2;if(ts.length>=3&&Math.random()<.22)n=3;
+  // dernières cartes : se débarrasser de tout si c'est entièrement vrai
+  if(ts.length===h.length&&h.length<=3)n=h.length;
+  return ts.slice(0,n);
+}
+/* Estimation bayésienne : on tire des mains plausibles (5 cartes du pool caché) et on rejoue
+   chaque pose du joueur précédent. Chaque main est pondérée par la probabilité qu'un joueur
+   la tenant ait posé exactement ce nombre de cartes, en disant vrai, en bluffant ou avec le Diable. */
+const NT={1:.5,2:.35,3:.15},NL={1:.6,2:.3,3:.1};
+function nLik(w,n,max){let s=0;for(let k=1;k<=Math.min(3,max);k++)s+=w[k];return s&&n<=max?w[n]/s:0}
+function estimateClassic(me,placer){
+  const T=E.table,pool=hiddenPool(me),m=MD();
+  const L=EP(placer),plays=playedBy(placer).map(e=>e.cards.length);
+  const b=clamp((L.caught+.3)/(L.reveals+3),.06,.7),pd=.2;
+  const res={T:0,L:0,D:0},N=900,HS=m.hand;
+  for(let s=0;s<N;s++){
+    for(let i=0;i<HS&&i<pool.length;i++){const j=i+Math.floor(Math.random()*(pool.length-i));[pool[i],pool[j]]=[pool[j],pool[i]]}
+    let h=pool.slice(0,HS),out='T',w=1;
+    for(const n of plays){
+      const tr=h.filter(t=>isTruthCard(t,T)),li=h.filter(t=>t!=='DIABLE'&&!isTruthCard(t,T)),hasD=h.includes('DIABLE');
+      const nonD=h.length-(hasD?1:0);
+      const lT=tr.length?(1-b)*nLik(NT,n,tr.length):0;
+      const lL=li.length?(tr.length?b:1)*nLik(NL,n,nonD):0;
+      const lD=hasD&&n===1?(tr.length?pd:pd*3):0;
+      const tot=lT+lL+lD;
+      if(!tot){w=0;break}
+      w*=tot;
+      let x=Math.random()*tot;
+      if((x-=lT)<0){out='T';tr.slice(0,n).forEach(t=>h.splice(h.indexOf(t),1))}
+      else if((x-=lL)<0){out='L';const take=[li[0],...shuffle([...li.slice(1),...tr])].slice(0,n);take.forEach(t=>h.splice(h.indexOf(t),1))}
+      else{out='D';h.splice(h.indexOf('DIABLE'),1)}
+    }
+    res[out]+=w;
+  }
+  const tot=res.T+res.L+res.D||1;
+  return{pT:res.T/tot,pL:res.L/tot,pD:res.D/tot};
+}
+function aiShouldAccuseClassic(p,placer){
+  const{pT,pL,pD}=estimateClassic(p,placer);
+  const n=aliveCount(),r=risk(p),ai=p.ch.ai,L=EP(placer),T=E.table;
+  const Vd=10,Vk=n<=2?10:4+6/(n-1);
+  // si le joueur précédent ment, c'est LUI qui passe à la roulette avec sa propre arme
+  let evCall=pL*risk(L)*Vk-pT*r*Vd;
+  const others=othersOf(p.i).filter(j=>j!==placer).reduce((s,j)=>s+risk(EP(j)),0);
+  evCall+=pD*(-r*Vd+others*Vk*.5);
+  const h=p.hand,q=.4,nxR=risk(EP(nextAlive(p.i)));
+  let evPass=0;
+  if(h.length){
+    if(h.some(c=>isTruthCard(c.t,T)))evPass=q*.4*nxR*Vk;
+    else if(h.some(c=>c.t==='DIABLE'))evPass=q*.5*r*Vk;
+    else evPass=-q*.6*r*Vd;
+  }
+  const bias=(ai.aggr-.5)*.3*r*Vd+p.grudge[placer]*.04*r*Vd+rand(-.08,.08)*r*Vd;
+  return evCall+bias>evPass;
+}
+
 /* ---------- entrées joueurs (humain local, humain distant ou IA) ---------- */
 function aiDecide(i,kind,data){
   const p=EP(i);
-  if(kind==='play')return aiChooseCard(p);
-  if(kind==='accuse')return aiShouldAccuse(p,data.placer);
+  if(kind==='play')return isClassic()?aiChooseClassic(p):[aiChooseCard(p)];
+  if(kind==='accuse')return isClassic()?aiShouldAccuseClassic(p,data.placer):aiShouldAccuseChaos(p,data.placer);
   return aiPickTarget(p,data.ctx||{});
 }
 async function input(i,kind,data={},ms=0){
@@ -182,8 +289,8 @@ async function input(i,kind,data={},ms=0){
     return aiDecide(i,kind,data);
   }
   return new Promise((res,rej)=>{
-    let fin=false,timer=null;
-    const end=()=>{fin=true;clearTimeout(timer);p.pending=null;PENDING.delete(h);HOOK.cancelAsk(i)};
+    let fin=false;
+    const end=()=>{fin=true;p.pending=null;PENDING.delete(h);HOOK.cancelAsk(i)};
     const finish=v=>{if(fin)return;end();res(v)};
     const h={cancel(){if(fin)return;end();rej(ABORT)}};
     PENDING.add(h);
@@ -191,15 +298,24 @@ async function input(i,kind,data={},ms=0){
     HOOK.ask(i,kind,data,ms);
   });
 }
+/* valide une sélection de cartes : 1 à maxPlay cartes distinctes ; le Diable se joue seul */
+function validPlay(p,v){
+  if(!Array.isArray(v))v=[v];
+  v=[...new Set(v.map(x=>x|0))];
+  if(!v.length||v.length>MD().maxPlay)return null;
+  if(v.some(k=>k<0||k>=p.hand.length))return null;
+  if(v.length>1&&v.some(k=>p.hand[k].t==='DIABLE'))return null;
+  return v;
+}
 function engAnswer(i,v){
   const p=E&&EP(i);if(!p||!p.pending)return;
   const{kind,data,finish}=p.pending;
-  if(kind==='play'){v=v|0;if(v<0||v>=p.hand.length)return}
+  if(kind==='play'){v=validPlay(p,v);if(!v)return}
   else if(kind==='accuse')v=!!v;
   else{v=v|0;if(!data.cands.includes(v))return;emit({e:'aimset',s:i,t:v,final:true})}
   finish(v);
 }
-/* visée en direct : un humain survole/sélectionne une cible avant de valider */
+/* visée en direct : un humain sélectionne une cible avant de valider */
 function engAimPreview(i,v){
   const p=E&&EP(i);if(!p||!p.pending||p.pending.kind!=='target')return;
   v=v|0;if(!p.pending.data.cands.includes(v))return;
@@ -224,19 +340,23 @@ async function engRun(){
     emit({e:'end',winner:al.length?al[0]:-1,rounds:E.round});
   }catch(e){if(e!==ABORT)console.error(e)}
 }
+function buildDeck(){const d=[];for(const[t,n]of Object.entries(MD().deck))for(let k=0;k<n;k++)d.push({t});return shuffle(d)}
 async function engRound(){
   E.round++;
-  const deck=shuffle([...Array(5)].map(()=>({t:'ROI'})).concat([...Array(5)].map(()=>({t:'REINE'})),[{t:'CHAOS'},{t:'MAITRE'}]));
+  const m=MD(),deck=buildDeck();
   E.players.forEach(p=>p.hand=[]);
-  E.table=Math.random()<.5?'ROI':'REINE';E.claims=0;E.pile=[];E.revealed=[];E.cur=-1;E.deciding=-1;
+  E.table=pick(m.tables);E.claims=0;E.pile=[];E.revealed=[];E.cur=-1;E.deciding=-1;
   sync();
   emit({e:'round',round:E.round,table:E.table,alive:aliveCount()});
   await wait(1400);
   emit({e:'log',html:`Manche ${E.round} : table des <b>${TYPES[E.table].plural}</b>.`});
-  let s=E.starter;if(!EP(s).alive)s=nextAlive(s);
-  E.starter=nextAlive(s); // la manche suivante commence au joueur après celui-ci
+  // Chaos Liar : rotation · Classic Liar : celui qui vient de passer à la roulette commence
+  let s=E.nextStarter!=null?E.nextStarter:E.starter;E.nextStarter=null;
+  if(!EP(s).alive)s=nextAlive(s);
+  E.starter=nextAlive(s);
   const order=[];for(let k=0;k<4;k++){const j=(s+k)%4;if(EP(j).alive)order.push(j)}
-  for(let n=0;n<3;n++)for(const j of order){EP(j).hand.push(deck.pop());emit({e:'deal',seat:j});await wait(270)}
+  const dealWait=m.hand>3?170:270;
+  for(let n=0;n<m.hand;n++)for(const j of order){EP(j).hand.push(deck.pop());emit({e:'deal',seat:j});await wait(dealWait)}
   sync();
   let cur=s;
   while(true){
@@ -245,7 +365,7 @@ async function engRound(){
       emit({e:'cutin',seat:null,text:'NOUVELLE DONNE',sub:'Toutes les cartes sont sur la table'});await wait(1400);break;
     }
     for(let k=0;k<4;k++){const j=(cur+k)%4;if(EP(j).alive&&EP(j).hand.length){cur=j;break}}
-    /* Dernier à avoir des cartes : il ne peut pas poser, il doit accuser la dernière carte posée */
+    /* Dernier à avoir des cartes : il ne peut pas poser, il doit accuser la dernière pose */
     const last=E.pile[E.pile.length-1];
     if(soleHolder(cur)&&last&&!last.revealed&&last.by!==cur&&EP(last.by).alive){
       await forcedAccuseNotice(cur,last.by);
@@ -255,15 +375,16 @@ async function engRound(){
     }
     E.cur=cur;sync();
     const p=EP(cur);
-    const k=await input(cur,'play');
-    const card=p.hand.splice(k,1)[0];
-    const entry={card,by:cur,revealed:false,rot:Math.round(rand(-25,25)),dx:Math.round(rand(-14,14)),dy:Math.round(rand(-6,6))};
+    const ks=await input(cur,'play',{max:m.maxPlay});
+    const cards=[...ks].sort((a,b)=>b-a).map(k=>p.hand.splice(k,1)[0]).reverse();
+    const n=cards.length;
+    const entry={cards,by:cur,revealed:false,rot:Math.round(rand(-25,25)),dx:Math.round(rand(-14,14)),dy:Math.round(rand(-6,6))};
     sync();
-    emit({e:'play',seat:cur,rot:entry.rot});
-    await wait(420);
-    E.pile.push(entry);E.claims++;sync();
-    emit({e:'say',seat:cur,text:p.kind==='ai'?line(p,'play',E.table):`C’est ${TYPES[E.table].art} !`});
-    emit({e:'log',html:`{{p${cur}}} pose une carte : « ${TYPES[E.table].art} ».`});
+    emit({e:'play',seat:cur,rot:entry.rot,n});
+    await wait(420+(n-1)*120);
+    E.pile.push(entry);E.claims+=n;sync();
+    emit({e:'say',seat:cur,text:p.kind==='ai'?line(p,'play',E.table,n):claimSay(E.table,n)});
+    emit({e:'log',html:`{{p${cur}}} pose ${n>1?n+' cartes':'une carte'} : « ${claimPhrase(E.table,n)} ».`});
     const acc=await accusationWindow(cur);
     E.cur=-1;E.deciding=-1;sync();
     if(acc!=null){
@@ -284,25 +405,36 @@ async function accusationWindow(placer){
   const nx=nextAlive(placer);if(nx===placer)return null;
   if(soleHolder(nx)){await forcedAccuseNotice(nx,placer);return nx}
   E.deciding=nx;sync();
-  const yes=await input(nx,'accuse',{placer});
+  const yes=await input(nx,'accuse',{placer,n:E.pile[E.pile.length-1].cards.length});
   E.deciding=-1;sync();
   if(yes)return nx;
   emit({e:'say',seat:nx,text:EP(nx).kind==='ai'?pick(PASS_LINES):'Ça passe.',ms:1500});
   emit({e:'log',html:`{{p${nx}}} laisse passer.`});
   return null;
 }
-async function resolveAccusation(acc,placer,entry){
-  const A=EP(acc),L=EP(placer);
-  L.grudge[acc]+=1;
+async function announceAccusation(acc,placer,entry){
+  const A=EP(acc);
+  EP(placer).grudge[acc]+=1;
   emit({e:'log',html:`{{p${acc}}} accuse {{p${placer}}} de mentir !`});
   emit({e:'cutin',seat:acc,text:'MENTEUR !',sub:`{{n${acc}}} ➜ {{n${placer}}}`});
   await wait(1400);
-  emit({e:'say',seat:acc,text:A.kind==='ai'?line(A,'accuse'):'Retourne cette carte.',ms:1800});
+  emit({e:'say',seat:acc,text:A.kind==='ai'?line(A,'accuse'):(entry.cards.length>1?'Retourne ces cartes.':'Retourne cette carte.'),ms:1800});
   await wait(500);
-  const t=entry.card.t,truth=t===E.table;
-  emit({e:'reveal',t,truth,verdict:t==='MAITRE'?'MAÎTRE !':t==='CHAOS'?'CHAOS !':truth?'VÉRITÉ':'MENSONGE'});
-  await wait(2100);
-  entry.revealed=true;E.revealed.push(entry.card);L.reveals++;sync();
+}
+async function revealEntry(entry,verdict,truth){
+  const ts=entry.cards.map(c=>c.t);
+  emit({e:'reveal',ts,truth,verdict});
+  await wait(2100+(ts.length-1)*300);
+  entry.revealed=true;E.revealed.push(...entry.cards);EP(entry.by).reveals++;sync();
+}
+function resolveAccusation(acc,placer,entry){return isClassic()?resolveClassic(acc,placer,entry):resolveChaos(acc,placer,entry)}
+
+/* ---------- résolution CHAOS LIAR ---------- */
+async function resolveChaos(acc,placer,entry){
+  const L=EP(placer);
+  await announceAccusation(acc,placer,entry);
+  const t=entry.cards[0].t,truth=t===E.table;
+  await revealEntry(entry,t==='MAITRE'?'MAÎTRE !':t==='CHAOS'?'CHAOS !':truth?'VÉRITÉ':'MENSONGE',truth);
   if(truth){
     emit({e:'say',seat:placer,text:L.kind==='ai'?pick(['Raté.','Mauvais pari.','Dommage pour toi.']):'Je t’avais prévenu.'});
     emit({e:'log',html:`C’était vrai. {{p${acc}}} doit se tirer dessus.`});
@@ -324,6 +456,55 @@ async function resolveAccusation(acc,placer,entry){
   const tg=await input(acc,'target',{cands:othersOf(acc),title:'Mensonge démasqué · <b>Choisis ta cible</b>',ctx:{liar:placer}});
   return await shoot(acc,tg);
 }
+
+/* ---------- résolution CLASSIC LIAR ---------- */
+async function resolveClassic(acc,placer,entry){
+  const L=EP(placer);
+  await announceAccusation(acc,placer,entry);
+  const T=E.table,ts=entry.cards.map(c=>c.t);
+  const devil=ts.includes('DIABLE'),lie=!devil&&ts.some(t=>!isTruthCard(t,T));
+  await revealEntry(entry,devil?'LE DIABLE !':lie?'MENSONGE':'VÉRITÉ',!devil&&!lie);
+  if(devil){
+    L.caught++;
+    const victims=othersOf(placer);
+    emit({e:'flash',red:true});
+    emit({e:'cutin',seat:placer,text:'LE DIABLE',sub:`Tout le monde passe à la roulette, sauf {{n${placer}}}`});
+    await wait(1400);
+    emit({e:'log',html:`<b class="red">Carte du Diable !</b> Tout le monde passe à la roulette, sauf {{p${placer}}}.`});
+    E.nextStarter=placer;
+    return await rouletteAll(victims);
+  }
+  if(lie){
+    L.caught++;
+    emit({e:'say',seat:placer,text:L.kind==='ai'?line(L,'caught'):'Aïe.',ms:1600});
+    emit({e:'log',html:`Mensonge ! {{p${placer}}} passe à la roulette.`});
+    E.nextStarter=placer;
+    await wait(500);
+    return await shoot(placer,placer);
+  }
+  emit({e:'say',seat:placer,text:L.kind==='ai'?pick(['Raté.','Mauvais pari.','Dommage pour toi.']):'Je t’avais prévenu.'});
+  emit({e:'log',html:`C’était vrai. {{p${acc}}} passe à la roulette.`});
+  E.nextStarter=acc;
+  await wait(700);
+  return await shoot(acc,acc);
+}
+/* roulette simultanée : chaque joueur de la liste presse la détente contre lui-même */
+async function rouletteAll(list){
+  list.forEach(j=>emit({e:'say',seat:j,text:EP(j).kind==='ai'?line(EP(j),'self'):'Allez… pas maintenant.',ms:1800}));
+  emit({e:'aim',pairs:list.map(j=>[j,j])});
+  for(const n of[3,2,1]){emit({e:'count',n});await wait(700)}
+  const results=list.map(j=>({s:j,t:j,real:fireGun(EP(j))}));
+  const dead=results.filter(r=>r.real).map(r=>r.t);
+  dead.forEach(eliminate);
+  emit({e:'fire',results});
+  sync();
+  results.forEach(r=>emit({e:'log',html:`{{p${r.s}}} : ${r.real?'<b class="red">BANG</b>':'clic'}`}));
+  await wait(1500);
+  emit({e:'clearAim'});
+  if(dead.length)await wait(600);
+  return dead.length;
+}
+
 function eliminate(i){const p=EP(i);p.alive=false;p.hand=[]}
 async function shoot(si,ti){
   const sh=EP(si),tg=EP(ti),self=si===ti;

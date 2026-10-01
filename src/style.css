@@ -414,3 +414,30 @@ body{overflow:clip}
 @media (max-height:520px){#scr-title .title-cast{display:none}}
 #scr-title .title-cast{margin-bottom:clamp(8px,2vh,18px)}
 #scr-title .tagline{white-space:nowrap}
+
+/* Classic Liar : nouvelles cartes, sélection multiple, retournement de plusieurs cartes */
+.card.t-AS{background:var(--paper)}
+.card.t-JOKER{background:#18c29c}
+.card.t-JOKER .lbl{background:var(--ink);color:#18c29c}
+.card.t-DIABLE{background:var(--ink);border-color:var(--blood);box-shadow:5px 5px 0 var(--blood)}
+.card.t-DIABLE .lbl{background:var(--blood);color:var(--paper)}
+#hand.many{gap:clamp(4px,.7vw,10px)}
+@media (max-aspect-ratio:4/5){#hand.many{--cw:clamp(46px,13.5vw,74px)}}
+#reveal .flips{display:flex;gap:clamp(8px,2vw,22px);align-items:center;justify-content:center}
+#reveal .flips.multi .flip{--cw:clamp(84px,16vh,150px)}
+@media (max-aspect-ratio:4/5){#reveal .flips.multi .flip{--cw:clamp(74px,24vw,120px)}}
+@media (max-aspect-ratio:4/5){
+  .me{flex-wrap:nowrap;align-items:flex-end;gap:6px}
+  .me .seat{--fw:56px;flex:none}
+  .me .seat .meta{padding:2px 4px}
+  .handcol{flex:1;min-width:0}
+  #hand.many{--cw:min(15vw,calc((100vw - 32px - 62px - 48px)/5))}
+  #prompt .btn{font-size:16px;padding:.35em .8em}
+  #prompt .pbtns{gap:10px}
+  .ptext{font-size:15px}
+}
+@media (max-aspect-ratio:4/5){
+  #hand.many{width:100%;justify-content:center}
+  #hand.many .card{flex:1 1 0;min-width:0;width:auto;max-width:var(--cw)}
+  #hand.many .card .lbl{font-size:11px}
+}

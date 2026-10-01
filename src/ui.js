@@ -13,7 +13,7 @@ let ME=0;               // ma place autour de la table
 let V=null;             // état visible
 let BUILT=false, deadShown=false, soloChar=0;
 let PICKED_MODE='chaos-liar', MODE_FLOW='solo';
-const UIS={selecting:false,sel:null,onTarget:null};
+const UIS={selecting:false,sels:[],max:1,onTarget:null};
 
 function ransom(text,seed=0){
   let k=-1;
@@ -87,15 +87,28 @@ function renderSeat(i){
 function renderHand(){
   const h=$('#hand'),me=VP(ME);
   h.classList.toggle('pickable',UIS.selecting);
+  h.classList.toggle('many',V.hand.length>3);
   if(!me.alive){h.innerHTML='<div class="hand-note">Tu es tombé. Tu regardes la fin de la partie.</div>';return}
   if(!V.hand.length){h.innerHTML='<div class="hand-note">Plus de cartes en main.</div>';return}
-  h.innerHTML=V.hand.map((t,k)=>{const sel=UIS.selecting&&UIS.sel===k;return `<div class="card face t-${t}${sel?' sel':''}" data-k="${k}" tabindex="${UIS.selecting?0:-1}" role="button" aria-label="${TYPES[t].label}">${sel&&t!==V.table?'<span class="tag">BLUFF</span>':''}${ICONS[t]}<span class="lbl">${TYPES[t].label}</span></div>`}).join('');
-  h.querySelectorAll('.card').forEach(el=>{const f=()=>{if(!UIS.selecting)return;UIS.sel=+el.dataset.k;SFX.tick();renderHand();UIS.onSel&&UIS.onSel()};el.onclick=f;el.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();f()}}});
+  const sels=UIS.selecting?UIS.sels:[];
+  h.innerHTML=V.hand.map((t,k)=>{const sel=sels.includes(k);const lie=sel&&(t==='DIABLE'||!isTruthCard(t,V.table));
+    return `<div class="card face t-${t}${sel?' sel':''}" data-k="${k}" tabindex="${UIS.selecting?0:-1}" role="button" aria-pressed="${sel}" aria-label="${TYPES[t].label}">${lie?`<span class="tag">${t==='DIABLE'?'DIABLE':'BLUFF'}</span>`:''}${ICONS[t]}<span class="lbl">${TYPES[t].label}</span></div>`}).join('');
+  h.querySelectorAll('.card').forEach(el=>{const f=()=>{if(!UIS.selecting)return;toggleSel(+el.dataset.k);SFX.tick();renderHand();UIS.onSel&&UIS.onSel()};el.onclick=f;el.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();f()}}});
+}
+/* sélection : 1 à max cartes ; le Diable se joue seul ; avec max=1 un clic remplace la sélection */
+function toggleSel(k){
+  const s=UIS.sels,max=UIS.max||1,isD=V.hand[k]==='DIABLE';
+  if(s.includes(k)){UIS.sels=s.filter(x=>x!==k);return}
+  if(max===1||isD||s.some(x=>V.hand[x]==='DIABLE')){UIS.sels=[k];return}
+  if(s.length>=max){UIS.sels=[...s.slice(1),k];return}
+  UIS.sels=[...s,k];
 }
 function renderCenter(){
   $('#tablecard').innerHTML=`${ICONS[V.table]}<span>TABLE DES ${TYPES[V.table].plural}</span>`;
-  $('#claims').innerHTML=`<b>${V.claims}</b> annonce${V.claims>1?'s':''} · seulement <b>5</b> ${TYPES[V.table].plural} existent`;
-  $('#pile').innerHTML=V.pile.map(e=>`<div class="pc" style="transform:translate(-50%,-50%) translate(${e.dx}px,${e.dy}px) rotate(${e.rot}deg)">${e.t?faceHTML(e.t):backHTML()}</div>`).join('');
+  const md=modeOf(V.mode),T=V.table,jk=md.deck.JOKER||0;
+  $('#claims').innerHTML=`<b>${V.claims}</b> carte${V.claims>1?'s':''} annoncée${V.claims>1?'s':''} · seulement <b>${md.deck[T]||0}</b> ${TYPES[T].plural}${jk?` + <b>${jk}</b> JOKERS`:''} existent`;
+  $('#pile').innerHTML=V.pile.map(e=>{const n=e.n||1;let s='';for(let k=0;k<n;k++){const off=(k-(n-1)/2)*14;
+    s+=`<div class="pc" style="transform:translate(-50%,-50%) translate(${e.dx+off}px,${e.dy-k*2}px) rotate(${e.rot+(k-(n-1)/2)*7}deg)">${e.ts?faceHTML(e.ts[k]):backHTML()}</div>`}return s}).join('');
   $('#roundlbl').textContent=`MANCHE ${V.round||1}`;
   const mp=$('#modepill');if(V.mode){mp.hidden=false;mp.innerHTML=`<span>${modeOf(V.mode).name}</span>`}
 }
@@ -128,7 +141,7 @@ function hidePrompt(){clearInterval(promptIv);promptIv=null;$('#prompt').innerHT
 
 /* ---------- demandes au joueur ---------- */
 function clearAsk(){
-  UIS.selecting=false;UIS.sel=null;UIS.onSel=null;UIS.onTarget=null;
+  UIS.selecting=false;UIS.sels=[];UIS.onSel=null;UIS.onTarget=null;
   document.querySelectorAll('.seat.targetable').forEach(e=>e.classList.remove('targetable','picked'));
   hidePrompt();if(V&&BUILT)renderHand();
 }
@@ -136,11 +149,16 @@ function onAsk(kind,data,ms,answer,preview){
   clearAsk();SFX.ping();
   const art=TYPES[V.table].art;
   if(kind==='play'){
-    UIS.selecting=true;UIS.sel=null;renderHand();
-    showPrompt({text:`À toi. Choisis une carte et annonce : <b>« C’est ${art} »</b>`,buttons:[{label:'POSER FACE CACHÉE',cls:'red',id:'btn-play',disabled:true,on:()=>{if(UIS.sel==null)return;const k=UIS.sel;clearAsk();answer(k)}}]});
-    UIS.onSel=()=>{const b=$('#btn-play');if(b){b.disabled=false;const lie=V.hand[UIS.sel]!==V.table;b.innerHTML=`<span>${lie?'BLUFFER':'POSER'} · « ${art.toUpperCase()} »</span>`}};
+    UIS.selecting=true;UIS.sels=[];UIS.max=data.max||1;renderHand();
+    const T=V.table;
+    showPrompt({text:UIS.max>1?`À toi. Choisis de <b>1 à ${UIS.max} cartes</b> et annonce des <b>${TYPES[T].plural}</b>`:`À toi. Choisis une carte et annonce : <b>« C’est ${art} »</b>`,
+      buttons:[{label:'CHOISIS TES CARTES',cls:'red',id:'btn-play',disabled:true,on:()=>{if(!UIS.sels.length)return;const ks=UIS.sels.slice();clearAsk();answer(ks)}}]});
+    UIS.onSel=()=>{const b=$('#btn-play');if(!b)return;const n=UIS.sels.length;b.disabled=!n;
+      if(!n){b.innerHTML='<span>CHOISIS TES CARTES</span>';return}
+      const lie=UIS.sels.some(k=>V.hand[k]==='DIABLE'||!isTruthCard(V.hand[k],T));
+      b.innerHTML=`<span>${lie?'BLUFFER':'POSER'} · « ${claimPhrase(T,n).toUpperCase()} »</span>`};
   }else if(kind==='accuse'){
-    showPrompt({text:`${nm(data.placer)} annonce <b>${art}</b>. Tu es le suivant : tu le crois ?`,buttons:[
+    showPrompt({text:`${nm(data.placer)} annonce <b>${claimPhrase(V.table,data.n||1)}</b>. Tu es le suivant : tu le crois ?`,buttons:[
       {label:'MENTEUR !',cls:'red',on:()=>{clearAsk();answer(true)}},
       {label:'LAISSER PASSER',on:()=>{clearAsk();answer(false)}}]});
   }else{
@@ -216,11 +234,12 @@ function cutIn(ch,text,sub,color,seed=7){
   c.hidden=false;SFX.cut();clearTimeout(cutT);cutT=setTimeout(()=>{c.hidden=true},1350);
 }
 let revT=null;
-async function showReveal(t,verdict,truth){
+async function showReveal(ts,verdict,truth){
   const rv=$('#reveal');clearTimeout(revT);
-  rv.innerHTML=`<div class="flip"><div class="inner">${backHTML()}${faceHTML(t)}</div></div>`;rv.hidden=false;
-  await sleep(380);rv.querySelector('.inner')?.classList.add('on');SFX.card();
-  await sleep(560);
+  rv.innerHTML=`<div class="flips${ts.length>1?' multi':''}">${ts.map(t=>`<div class="flip"><div class="inner">${backHTML()}${faceHTML(t)}</div></div>`).join('')}</div>`;rv.hidden=false;
+  await sleep(380);
+  for(const el of rv.querySelectorAll('.inner')){el.classList.add('on');SFX.card();await sleep(300)}
+  await sleep(260);
   const v=document.createElement('div');v.className='verdict '+(truth?'truth':'lie');v.textContent=verdict;rv.appendChild(v);
   if(!truth)flash(true);
   revT=setTimeout(()=>{rv.hidden=true},1100);
@@ -232,11 +251,11 @@ function onEvent(ev){
   switch(ev.e){
     case 'round':V.round=ev.round;V.table=ev.table;renderCenter();cutIn(null,`MANCHE ${ev.round}`,`TABLE DES ${TYPES[ev.table].plural} · ${ev.alive} joueurs en vie`,ev.table==='ROI'?'#f2b33d':'#e3122b',ev.round);break;
     case 'deal':flyCard($('#pile'),ev.seat===ME?$('#hand'):fboxOf(ev.seat),backHTML(),{dur:250,rot:rand(-10,10),scale:.7});VP(ev.seat).n++;renderSeat(ev.seat);break;
-    case 'play':flyCard(ev.seat===ME?$('#hand'):fboxOf(ev.seat),$('#pile'),backHTML(),{dur:380,rot:ev.rot,scale:.75});break;
+    case 'play':for(let k=0;k<(ev.n||1);k++)setTimeout(()=>flyCard(ev.seat===ME?$('#hand'):fboxOf(ev.seat),$('#pile'),backHTML(),{dur:380,rot:ev.rot+k*7,scale:.75}),k*120);break;
     case 'say':say(ev.seat,ev.text,ev.ms);break;
     case 'log':log(fmt(ev.html));break;
     case 'cutin':cutIn(ev.seat!=null?chOf(ev.seat):null,ev.text,fmt(ev.sub),null,ev.seat??7);break;
-    case 'reveal':showReveal(ev.t,ev.verdict,ev.truth);break;
+    case 'reveal':showReveal(ev.ts||[ev.t],ev.verdict,ev.truth);break;
     case 'aim':setAims(ev.pairs,true);break;
     case 'aimset':setAims([[ev.s,ev.t]],!!ev.final);break;
     case 'shotbox':$('#shotbox').innerHTML=`<div class="duel">${esc(plainName(ev.s))} ${ev.s===ev.t?'<em>➜ SUR LUI-MÊME</em>':`<em>➜</em> ${esc(plainName(ev.t))}`}</div><div class="cyl spin">${cylSVG(ev.fired)}</div><div class="odds">Chance de balle réelle : 1 sur ${6-ev.fired}</div>`;SFX.spin();break;
