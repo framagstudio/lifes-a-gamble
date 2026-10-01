@@ -416,6 +416,18 @@ body{overflow:clip}
 .modepill{border-color:var(--blood);background:var(--blood)}
 
 .rw{display:inline-block;white-space:nowrap}
+
+/* écran titre : tient sur une seule page, sans défilement */
+#scr-title{overflow:hidden;padding-block:max(12px,2vh)}
+#scr-title>.inner{gap:clamp(10px,2.4vh,22px)}
+#scr-title .logo{font-size:clamp(34px,min(11vw,10.5vh),140px)}
+#scr-title .tagline{font-size:clamp(14px,2.2vh,22px)}
+#scr-title .title-cast .frame{width:clamp(48px,min(10vw,11vh),120px)}
+#scr-title .menu-col{gap:clamp(10px,1.8vh,16px);margin-top:0}
+#scr-title .menu-col .btn{font-size:clamp(15px,2.3vh,22px)}
+@media (max-height:520px){#scr-title .title-cast{display:none}}
+#scr-title .title-cast{margin-bottom:clamp(8px,2vh,18px)}
+#scr-title .tagline{white-space:nowrap}
 </style>
 </head>
 <body>
@@ -467,13 +479,12 @@ body{overflow:clip}
 <section class="screen" id="scr-title">
   <div class="inner">
     <div class="logo ransom" id="biglogo"></div>
-    <div class="tagline"><span>Mode LIAR · 4 places · 12 cartes · 6 chambres</span></div>
+    <div class="tagline"><span>Bluff, cartes et revolver · 1 à 4 joueurs</span></div>
     <div class="title-cast" id="titlecast"></div>
     <div class="menu-col">
       <button class="btn red" id="btn-host"><span>CRÉER UN SALON</span></button>
       <button class="btn red" id="btn-join"><span>REJOINDRE UN SALON</span></button>
       <button class="btn" id="btn-solo"><span>SOLO CONTRE 3 IA</span></button>
-      <button class="btn dark" id="btn-rules2"><span>RÈGLES</span></button>
     </div>
   </div>
 </section>
@@ -1592,7 +1603,7 @@ function profileGo(){
   $('#btn-sound').innerHTML=SND_ON;
   $('#btn-sound').onclick=()=>{SFX.init();SFX.on=!SFX.on;$('#btn-sound').innerHTML=SFX.on?SND_ON:SND_OFF};
   $('#modehead').innerHTML=ransom('CHOISIS TON MODE',2);
-  $('#btn-rules').onclick=()=>openRules(currentModeId());$('#btn-rules2').onclick=()=>openRules(PICKED_MODE);
+  $('#btn-rules').onclick=()=>openRules(currentModeId());
   $('#btn-mode-back').onclick=()=>showScreen('scr-title');
   $('#btn-rclose').onclick=()=>{$('#rules').hidden=true};
   $('#rules').onclick=e=>{if(e.target.id==='rules')$('#rules').hidden=true};

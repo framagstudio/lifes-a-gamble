@@ -613,7 +613,7 @@ function profileGo(){
   $('#btn-sound').innerHTML=SND_ON;
   $('#btn-sound').onclick=()=>{SFX.init();SFX.on=!SFX.on;$('#btn-sound').innerHTML=SFX.on?SND_ON:SND_OFF};
   $('#modehead').innerHTML=ransom('CHOISIS TON MODE',2);
-  $('#btn-rules').onclick=()=>openRules(currentModeId());$('#btn-rules2').onclick=()=>openRules(PICKED_MODE);
+  $('#btn-rules').onclick=()=>openRules(currentModeId());
   $('#btn-mode-back').onclick=()=>showScreen('scr-title');
   $('#btn-rclose').onclick=()=>{$('#rules').hidden=true};
   $('#rules').onclick=e=>{if(e.target.id==='rules')$('#rules').hidden=true};

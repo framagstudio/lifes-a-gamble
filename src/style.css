@@ -402,3 +402,15 @@ body{overflow:clip}
 .modepill{border-color:var(--blood);background:var(--blood)}
 
 .rw{display:inline-block;white-space:nowrap}
+
+/* écran titre : tient sur une seule page, sans défilement */
+#scr-title{overflow:hidden;padding-block:max(12px,2vh)}
+#scr-title>.inner{gap:clamp(10px,2.4vh,22px)}
+#scr-title .logo{font-size:clamp(34px,min(11vw,10.5vh),140px)}
+#scr-title .tagline{font-size:clamp(14px,2.2vh,22px)}
+#scr-title .title-cast .frame{width:clamp(48px,min(10vw,11vh),120px)}
+#scr-title .menu-col{gap:clamp(10px,1.8vh,16px);margin-top:0}
+#scr-title .menu-col .btn{font-size:clamp(15px,2.3vh,22px)}
+@media (max-height:520px){#scr-title .title-cast{display:none}}
+#scr-title .title-cast{margin-bottom:clamp(8px,2vh,18px)}
+#scr-title .tagline{white-space:nowrap}
