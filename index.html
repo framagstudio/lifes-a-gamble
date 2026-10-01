@@ -382,6 +382,10 @@ html{background:var(--ink)}
 body{overflow:clip}
 #log{bottom:16px;width:min(240px,21vw)}
 @media (max-width:1100px){#log{display:none}}
+
+.seat.targetable.picked .fbox{animation:none;transform:scale(1.12);filter:drop-shadow(6px 6px 0 var(--blood))}
+.seat.targetable.picked .fbox::after{background-color:rgba(227,18,43,.25);border-width:6px}
+.seat.targetable:not(.picked) .fbox::after{opacity:.55}
 </style>
 </head>
 <body>
@@ -543,7 +547,7 @@ body{overflow:clip}
       <li><b>Chaos</b> : tout le monde vise, compte à rebours, tirs simultanés.</li>
     </ul>
     <h3>LE REVOLVER</h3>
-    <ul><li>6 chambres, 1 balle réelle. Chaque tir à blanc rapproche la balle : 1/6, 1/5, 1/4…</li><li>Après une balle réelle, l’arme est rechargée.</li><li>Quand tu as le droit de tirer, tu as 9 secondes pour viser. Sinon, le tir se retourne contre toi.</li></ul>
+    <ul><li>6 chambres, 1 balle réelle. Chaque tir à blanc rapproche la balle : 1/6, 1/5, 1/4…</li><li>Après une balle réelle, l’arme est rechargée.</li><li>Quand tu as le droit de tirer, touche ta cible puis confirme. Pas de chrono, et impossible de se viser soi-même.</li></ul>
     <h3>EN LIGNE</h3>
     <ul><li>L’hôte crée un salon et partage le code ou le lien. Jusqu’à 4 joueurs.</li><li>Quand l’hôte ferme le salon, les places vides sont prises par des IA.</li><li>L’hôte doit garder sa page ouverte : la partie tourne sur son appareil.</li><li>Si quelqu’un se déconnecte, une IA joue à sa place jusqu’à son retour.</li></ul>
   </div>
@@ -726,7 +730,6 @@ async function input(i,kind,data={},ms=0){
     const h={cancel(){if(fin)return;end();rej(ABORT)}};
     PENDING.add(h);
     p.pending={kind,data,finish,fallback:()=>finish(aiDecide(i,kind,data))};
-    if(ms)timer=setTimeout(()=>finish(data.timeoutValue),ms);
     HOOK.ask(i,kind,data,ms);
   });
 }
@@ -833,14 +836,14 @@ async function resolveAccusation(acc,placer,entry){
     emit({e:'cutin',seat:placer,text:'CARTE MAÎTRE',sub:'Le menteur prend l’arme et tire sur qui il veut'});
     await wait(1400);
     emit({e:'log',html:`Carte Maître ! {{p${placer}}} choisit sa cible.`});
-    const tg=await input(placer,'target',{cands:othersOf(placer),title:'<b>CARTE MAÎTRE</b> · Choisis ta cible',timeoutValue:placer,ctx:{}},9000);
+    const tg=await input(placer,'target',{cands:othersOf(placer),title:'<b>CARTE MAÎTRE</b> · Choisis ta cible',ctx:{}});
     return await shoot(placer,tg);
   }
   if(t==='CHAOS')return await chaos();
   emit({e:'say',seat:placer,text:L.kind==='ai'?line(L,'caught'):'Aïe.',ms:1600});
   emit({e:'log',html:`Mensonge ! {{p${acc}}} gagne le droit de tirer.`});
   await wait(400);
-  const tg=await input(acc,'target',{cands:othersOf(acc),title:'Mensonge démasqué · <b>Choisis ta cible</b>',timeoutValue:acc,ctx:{liar:placer}},9000);
+  const tg=await input(acc,'target',{cands:othersOf(acc),title:'Mensonge démasqué · <b>Choisis ta cible</b>',ctx:{liar:placer}});
   return await shoot(acc,tg);
 }
 function eliminate(i){const p=EP(i);p.alive=false;p.hand=[]}
@@ -872,7 +875,7 @@ async function chaos(){
   const humans=shooters.filter(j=>EP(j).kind!=='ai');
   if(humans.length){
     emit({e:'aim',pairs:shooters.filter(j=>targets[j]!=null).map(j=>[j,targets[j]])});
-    await Promise.all(humans.map(h=>input(h,'target',{cands:othersOf(h),title:'<b>CHAOS</b> · Choisis ta cible',timeoutValue:h,ctx:{chaos:true}},9000).then(v=>{targets[h]=v})));
+    await Promise.all(humans.map(h=>input(h,'target',{cands:othersOf(h),title:'<b>CHAOS</b> · Choisis ta cible',ctx:{chaos:true}}).then(v=>{targets[h]=v})));
   }
   emit({e:'aim',pairs:shooters.map(j=>[j,targets[j]])});
   for(const n of[3,2,1]){emit({e:'count',n});await wait(700)}
@@ -905,7 +908,7 @@ let MODE=null;          // 'solo' | 'host' | 'client'
 let ME=0;               // ma place autour de la table
 let V=null;             // état visible
 let BUILT=false, deadShown=false, soloChar=0;
-const UIS={selecting:false,sel:null,onTarget:null,askTimer:null};
+const UIS={selecting:false,sel:null,onTarget:null};
 
 function ransom(text,seed=0){
   return [...text].map((ch,k)=>{
@@ -1019,8 +1022,8 @@ function hidePrompt(){clearInterval(promptIv);promptIv=null;$('#prompt').innerHT
 
 /* ---------- demandes au joueur ---------- */
 function clearAsk(){
-  UIS.selecting=false;UIS.sel=null;UIS.onSel=null;UIS.onTarget=null;clearTimeout(UIS.askTimer);
-  document.querySelectorAll('.seat.targetable').forEach(e=>e.classList.remove('targetable'));
+  UIS.selecting=false;UIS.sel=null;UIS.onSel=null;UIS.onTarget=null;
+  document.querySelectorAll('.seat.targetable').forEach(e=>e.classList.remove('targetable','picked'));
   hidePrompt();if(V&&BUILT)renderHand();
 }
 function onAsk(kind,data,ms,answer){
@@ -1035,10 +1038,15 @@ function onAsk(kind,data,ms,answer){
       {label:'MENTEUR !',cls:'red',on:()=>{clearAsk();answer(true)}},
       {label:'LAISSER PASSER',on:()=>{clearAsk();answer(false)}}]});
   }else{
-    data.cands.forEach(j=>seatEl(j).classList.add('targetable'));
-    UIS.onTarget=j=>{if(!data.cands.includes(j))return;SFX.tick();clearAsk();answer(j)};
-    showPrompt({text:`${fmt(data.title)} · touche un adversaire (${Math.round(ms/1000)} s)`,timer:ms});
-    UIS.askTimer=setTimeout(clearAsk,ms+200);
+    let pickT=null;
+    const draw=()=>{
+      data.cands.forEach(j=>{const el=seatEl(j);el.classList.add('targetable');el.classList.toggle('picked',j===pickT)});
+      if(pickT!=null)drawAim([[ME,pickT]]);
+      showPrompt({text:pickT==null?`${fmt(data.title)} · touche un adversaire`:`Cible : ${nm(pickT)}. Tu confirmes ?`,buttons:[
+        {label:pickT==null?'CHOISIS UNE CIBLE':`TIRER SUR ${esc(plainName(pickT))}`,cls:'red',id:'btn-fire',disabled:pickT==null,on:()=>{if(pickT==null)return;const t=pickT;$('#aim').innerHTML='';clearAsk();answer(t)}}]});
+    };
+    UIS.onTarget=j=>{if(!data.cands.includes(j))return;SFX.tick();pickT=j;draw()};
+    draw();
   }
 }
 

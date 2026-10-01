@@ -24,7 +24,7 @@ Jeu de bluff et de roulette russe dans un bar, au style graphique inspiré de Pe
   - `sync()` envoie l'état, construit par `stateFor(place)`, qui ne contient que la main du joueur concerné ;
   - `ask` / `cancelAsk` gèrent les demandes adressées à un joueur.
 - Chaque place est de type `local`, `remote` ou `ai`. `input(i, kind, data, ms)` gère les trois cas.
-  - Les types de demande sont `play`, `accuse` et `target`. Seul `target` a un délai (9 s), après quoi le tir se retourne contre le joueur.
+  - Les types de demande sont `play`, `accuse` et `target`. Aucune n'a de délai. Pour `target`, le joueur touche une cible (jamais lui-même) puis confirme avec « Tirer sur… ».
 - En cas de déconnexion (battement de cœur toutes les 3 s, coupure après 12 s), `seatToAI(i)` fait jouer une IA à la place. Le joueur se reconnecte grâce à un jeton stocké dans le `localStorage`.
 - Les identifiants PeerJS sont de la forme `lifesagamble-v1-` suivis du code de salon à 4 caractères. Le lien de partage est `…/#CODE`.
 

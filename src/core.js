@@ -173,7 +173,6 @@ async function input(i,kind,data={},ms=0){
     const h={cancel(){if(fin)return;end();rej(ABORT)}};
     PENDING.add(h);
     p.pending={kind,data,finish,fallback:()=>finish(aiDecide(i,kind,data))};
-    if(ms)timer=setTimeout(()=>finish(data.timeoutValue),ms);
     HOOK.ask(i,kind,data,ms);
   });
 }
@@ -280,14 +279,14 @@ async function resolveAccusation(acc,placer,entry){
     emit({e:'cutin',seat:placer,text:'CARTE MAÎTRE',sub:'Le menteur prend l’arme et tire sur qui il veut'});
     await wait(1400);
     emit({e:'log',html:`Carte Maître ! {{p${placer}}} choisit sa cible.`});
-    const tg=await input(placer,'target',{cands:othersOf(placer),title:'<b>CARTE MAÎTRE</b> · Choisis ta cible',timeoutValue:placer,ctx:{}},9000);
+    const tg=await input(placer,'target',{cands:othersOf(placer),title:'<b>CARTE MAÎTRE</b> · Choisis ta cible',ctx:{}});
     return await shoot(placer,tg);
   }
   if(t==='CHAOS')return await chaos();
   emit({e:'say',seat:placer,text:L.kind==='ai'?line(L,'caught'):'Aïe.',ms:1600});
   emit({e:'log',html:`Mensonge ! {{p${acc}}} gagne le droit de tirer.`});
   await wait(400);
-  const tg=await input(acc,'target',{cands:othersOf(acc),title:'Mensonge démasqué · <b>Choisis ta cible</b>',timeoutValue:acc,ctx:{liar:placer}},9000);
+  const tg=await input(acc,'target',{cands:othersOf(acc),title:'Mensonge démasqué · <b>Choisis ta cible</b>',ctx:{liar:placer}});
   return await shoot(acc,tg);
 }
 function eliminate(i){const p=EP(i);p.alive=false;p.hand=[]}
@@ -319,7 +318,7 @@ async function chaos(){
   const humans=shooters.filter(j=>EP(j).kind!=='ai');
   if(humans.length){
     emit({e:'aim',pairs:shooters.filter(j=>targets[j]!=null).map(j=>[j,targets[j]])});
-    await Promise.all(humans.map(h=>input(h,'target',{cands:othersOf(h),title:'<b>CHAOS</b> · Choisis ta cible',timeoutValue:h,ctx:{chaos:true}},9000).then(v=>{targets[h]=v})));
+    await Promise.all(humans.map(h=>input(h,'target',{cands:othersOf(h),title:'<b>CHAOS</b> · Choisis ta cible',ctx:{chaos:true}}).then(v=>{targets[h]=v})));
   }
   emit({e:'aim',pairs:shooters.map(j=>[j,targets[j]])});
   for(const n of[3,2,1]){emit({e:'count',n});await wait(700)}

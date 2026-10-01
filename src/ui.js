@@ -12,7 +12,7 @@ let MODE=null;          // 'solo' | 'host' | 'client'
 let ME=0;               // ma place autour de la table
 let V=null;             // état visible
 let BUILT=false, deadShown=false, soloChar=0;
-const UIS={selecting:false,sel:null,onTarget:null,askTimer:null};
+const UIS={selecting:false,sel:null,onTarget:null};
 
 function ransom(text,seed=0){
   return [...text].map((ch,k)=>{
@@ -126,8 +126,8 @@ function hidePrompt(){clearInterval(promptIv);promptIv=null;$('#prompt').innerHT
 
 /* ---------- demandes au joueur ---------- */
 function clearAsk(){
-  UIS.selecting=false;UIS.sel=null;UIS.onSel=null;UIS.onTarget=null;clearTimeout(UIS.askTimer);
-  document.querySelectorAll('.seat.targetable').forEach(e=>e.classList.remove('targetable'));
+  UIS.selecting=false;UIS.sel=null;UIS.onSel=null;UIS.onTarget=null;
+  document.querySelectorAll('.seat.targetable').forEach(e=>e.classList.remove('targetable','picked'));
   hidePrompt();if(V&&BUILT)renderHand();
 }
 function onAsk(kind,data,ms,answer){
@@ -142,10 +142,15 @@ function onAsk(kind,data,ms,answer){
       {label:'MENTEUR !',cls:'red',on:()=>{clearAsk();answer(true)}},
       {label:'LAISSER PASSER',on:()=>{clearAsk();answer(false)}}]});
   }else{
-    data.cands.forEach(j=>seatEl(j).classList.add('targetable'));
-    UIS.onTarget=j=>{if(!data.cands.includes(j))return;SFX.tick();clearAsk();answer(j)};
-    showPrompt({text:`${fmt(data.title)} · touche un adversaire (${Math.round(ms/1000)} s)`,timer:ms});
-    UIS.askTimer=setTimeout(clearAsk,ms+200);
+    let pickT=null;
+    const draw=()=>{
+      data.cands.forEach(j=>{const el=seatEl(j);el.classList.add('targetable');el.classList.toggle('picked',j===pickT)});
+      if(pickT!=null)drawAim([[ME,pickT]]);
+      showPrompt({text:pickT==null?`${fmt(data.title)} · touche un adversaire`:`Cible : ${nm(pickT)}. Tu confirmes ?`,buttons:[
+        {label:pickT==null?'CHOISIS UNE CIBLE':`TIRER SUR ${esc(plainName(pickT))}`,cls:'red',id:'btn-fire',disabled:pickT==null,on:()=>{if(pickT==null)return;const t=pickT;$('#aim').innerHTML='';clearAsk();answer(t)}}]});
+    };
+    UIS.onTarget=j=>{if(!data.cands.includes(j))return;SFX.tick();pickT=j;draw()};
+    draw();
   }
 }
 
