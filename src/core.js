@@ -39,8 +39,8 @@ const MODES=[
   pitch:'Bluffe sur des Rois et des Reines. Le joueur suivant peut crier « Menteur ! ». La carte Maître et la carte Chaos peuvent tout renverser.',
   hand:3,maxPlay:1,tables:['ROI','REINE'],deck:{ROI:5,REINE:5,CHAOS:1,MAITRE:1}},
  {id:'classic-liar',name:'CLASSIC LIAR',color:'#f2b33d',players:'1 à 4 joueurs · IA pour compléter',
-  pitch:'Le Liar d’origine : 5 cartes en main, tu poses de 1 à 3 cartes, les Jokers dépannent. Démasqué, tu passes à la roulette. Gare à la carte du Diable.',
-  hand:5,maxPlay:3,tables:['ROI','REINE','AS'],deck:{ROI:6,REINE:6,AS:6,JOKER:2,DIABLE:1}}
+  pitch:'Le Liar d’origine : 5 cartes en main, tu poses de 1 à 3 cartes, les Jokers dépannent. Démasqué, tu passes à la roulette.',
+  hand:5,maxPlay:3,tables:['ROI','REINE','AS'],deck:{ROI:6,REINE:6,AS:6,JOKER:2}}
 ];
 const modeOf=id=>MODES.find(m=>m.id===id)||MODES[0];
 /* une carte dit vrai si c'est la figure de table, ou un Joker (Classic Liar) */
@@ -49,7 +49,7 @@ const truthTotal=(m,T)=>(m.deck[T]||0)+(m.deck.JOKER||0);
 
 /* ---------- cartes ---------- */
 const TYPES={ROI:{label:'ROI',plural:'ROIS',art:'un ROI'},REINE:{label:'REINE',plural:'REINES',art:'une REINE'},AS:{label:'AS',plural:'AS',art:'un AS'},
-  CHAOS:{label:'CHAOS'},MAITRE:{label:'MAÎTRE'},JOKER:{label:'JOKER'},DIABLE:{label:'DIABLE'}};
+  CHAOS:{label:'CHAOS'},MAITRE:{label:'MAÎTRE'},JOKER:{label:'JOKER'}};
 const NUMW={1:'un',2:'deux',3:'trois'};
 /* « un ROI », « deux ROIS », « trois REINES » */
 const claimPhrase=(T,n=1)=>n<=1?TYPES[T].art:`${NUMW[n]||n} ${TYPES[T].plural}`;
@@ -59,7 +59,6 @@ const ICONS={
  REINE:`<svg viewBox="0 0 60 60"><path d="M6 44 Q30 2 54 44 Q30 32 6 44Z" fill="#e3122b" stroke="${O}" stroke-width="3.5" stroke-linejoin="round"/><circle cx="30" cy="22" r="6.5" fill="#fbf7f4" stroke="${O}" stroke-width="3"/><circle cx="17" cy="33" r="3.5" fill="#f2b33d" stroke="${O}" stroke-width="2.5"/><circle cx="43" cy="33" r="3.5" fill="#f2b33d" stroke="${O}" stroke-width="2.5"/><path d="M8 50 Q30 40 52 50" fill="none" stroke="${O}" stroke-width="4" stroke-linecap="round"/></svg>`,
  AS:`<svg viewBox="0 0 60 60"><path d="M30 5 C38 17 54 24 54 37 C54 46 45 50 37 45 C38 50 41 54 45 56 H15 C19 54 22 50 23 45 C15 50 6 46 6 37 C6 24 22 17 30 5Z" fill="${O}" stroke="${O}" stroke-width="2" stroke-linejoin="round"/><path d="M23 38 L30 18 L37 38 M26 31 H34" fill="none" stroke="#e3122b" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
  JOKER:`<svg viewBox="0 0 60 60"><path d="M8 46 L12 14 L24 32 L30 8 L36 32 L48 14 L52 46Z" fill="#8f5bff" stroke="${O}" stroke-width="3.5" stroke-linejoin="round"/><path d="M30 8 L36 32 L30 46Z" fill="#18c29c" stroke="${O}" stroke-width="2.5" stroke-linejoin="round"/><circle cx="12" cy="13" r="4.5" fill="#f2b33d" stroke="${O}" stroke-width="2.5"/><circle cx="30" cy="7" r="4.5" fill="#f2b33d" stroke="${O}" stroke-width="2.5"/><circle cx="48" cy="13" r="4.5" fill="#f2b33d" stroke="${O}" stroke-width="2.5"/><rect x="6" y="44" width="48" height="8" fill="#fbf7f4" stroke="${O}" stroke-width="3.5"/></svg>`,
- DIABLE:`<svg viewBox="0 0 60 60"><path d="M15 22 Q8 10 12 3 Q18 12 24 16Z M45 22 Q52 10 48 3 Q42 12 36 16Z" fill="#fbf7f4" stroke="${O}" stroke-width="2.5" stroke-linejoin="round"/><circle cx="30" cy="34" r="20" fill="#e3122b" stroke="#fbf7f4" stroke-width="3"/><path d="M19 30 L27 33 M41 30 L33 33" stroke="${O}" stroke-width="4" stroke-linecap="round"/><path d="M20 41 Q30 50 40 41 L36 43 L33 40 L30 44 L27 40 L24 43Z" fill="#fbf7f4" stroke="${O}" stroke-width="2" stroke-linejoin="round"/></svg>`,
  MAITRE:`<svg viewBox="0 0 60 60"><circle cx="20" cy="21" r="12" fill="#fbf7f4" stroke="${O}" stroke-width="3.5"/><circle cx="20" cy="21" r="4.5" fill="${O}"/><path d="M28 29 L51 52 M43 44 L49 38 M47 48 L53 42" stroke="${O}" stroke-width="5.5" stroke-linecap="round"/></svg>`,
  CHAOS:`<svg viewBox="0 0 60 60"><polygon points="30,3 36,20 54,12 42,28 58,36 39,38 44,57 30,44 16,57 21,38 2,36 18,28 6,12 24,20" fill="#fbf7f4" stroke="${O}" stroke-width="3" stroke-linejoin="round"/><circle cx="30" cy="31" r="7" fill="${O}"/><circle cx="30" cy="31" r="2.5" fill="#e3122b"/></svg>`
 };
@@ -182,20 +181,14 @@ function aiPickTarget(p,ctx={}){
 }
 
 /* =================== IA — CLASSIC LIAR =================== */
-/* Politique de pose : vérité la plupart du temps, bluff selon la personnalité,
-   carte du Diable jouée en appât quand une accusation devient probable. */
+/* Politique de pose : vérité la plupart du temps, bluff selon la personnalité et le risque. */
 function aiChooseClassic(p){
   const h=p.hand,T=E.table,ai=p.ch.ai,m=MD();
-  const truths=[],lies=[],devil=[];
-  h.forEach((c,k)=>{if(c.t==='DIABLE')devil.push(k);else if(isTruthCard(c.t,T))truths.push(k);else lies.push(k)});
+  const truths=[],lies=[];
+  h.forEach((c,k)=>(isTruthCard(c.t,T)?truths:lies).push(k));
   const r=risk(p),nxR=risk(EP(nextAlive(p.i)));
   const exposed=clamp(E.claims/truthTotal(m,T),0,1);
-  if(devil.length){
-    const w=.12+exposed*.7+(!truths.length?.3:0)+(nxR<.25?.1:0);
-    if(h.length===1||Math.random()<w)return[devil[0]];
-  }
   if(!truths.length){
-    if(!lies.length)return[devil[0]];
     const n=Math.min(lies.length,Math.random()<.55?1:Math.random()<.7?2:3);
     return shuffle(lies.slice()).slice(0,n);
   }
@@ -217,49 +210,43 @@ function aiChooseClassic(p){
 }
 /* Estimation bayésienne : on tire des mains plausibles (5 cartes du pool caché) et on rejoue
    chaque pose du joueur précédent. Chaque main est pondérée par la probabilité qu'un joueur
-   la tenant ait posé exactement ce nombre de cartes, en disant vrai, en bluffant ou avec le Diable. */
+   la tenant ait posé exactement ce nombre de cartes, en disant vrai ou en bluffant. */
 const NT={1:.5,2:.35,3:.15},NL={1:.6,2:.3,3:.1};
 function nLik(w,n,max){let s=0;for(let k=1;k<=Math.min(3,max);k++)s+=w[k];return s&&n<=max?w[n]/s:0}
 function estimateClassic(me,placer){
   const T=E.table,pool=hiddenPool(me),m=MD();
   const L=EP(placer),plays=playedBy(placer).map(e=>e.cards.length);
-  const b=clamp((L.caught+.3)/(L.reveals+3),.06,.7),pd=.2;
-  const res={T:0,L:0,D:0},N=900,HS=m.hand;
+  const b=clamp((L.caught+.3)/(L.reveals+3),.06,.7);
+  const res={T:0,L:0},N=900,HS=m.hand;
   for(let s=0;s<N;s++){
     for(let i=0;i<HS&&i<pool.length;i++){const j=i+Math.floor(Math.random()*(pool.length-i));[pool[i],pool[j]]=[pool[j],pool[i]]}
     let h=pool.slice(0,HS),out='T',w=1;
     for(const n of plays){
-      const tr=h.filter(t=>isTruthCard(t,T)),li=h.filter(t=>t!=='DIABLE'&&!isTruthCard(t,T)),hasD=h.includes('DIABLE');
-      const nonD=h.length-(hasD?1:0);
+      const tr=h.filter(t=>isTruthCard(t,T)),li=h.filter(t=>!isTruthCard(t,T));
       const lT=tr.length?(1-b)*nLik(NT,n,tr.length):0;
-      const lL=li.length?(tr.length?b:1)*nLik(NL,n,nonD):0;
-      const lD=hasD&&n===1?(tr.length?pd:pd*3):0;
-      const tot=lT+lL+lD;
+      const lL=li.length?(tr.length?b:1)*nLik(NL,n,h.length):0;
+      const tot=lT+lL;
       if(!tot){w=0;break}
       w*=tot;
       let x=Math.random()*tot;
       if((x-=lT)<0){out='T';tr.slice(0,n).forEach(t=>h.splice(h.indexOf(t),1))}
-      else if((x-=lL)<0){out='L';const take=[li[0],...shuffle([...li.slice(1),...tr])].slice(0,n);take.forEach(t=>h.splice(h.indexOf(t),1))}
-      else{out='D';h.splice(h.indexOf('DIABLE'),1)}
+      else{out='L';const take=[li[0],...shuffle([...li.slice(1),...tr])].slice(0,n);take.forEach(t=>h.splice(h.indexOf(t),1))}
     }
     res[out]+=w;
   }
-  const tot=res.T+res.L+res.D||1;
-  return{pT:res.T/tot,pL:res.L/tot,pD:res.D/tot};
+  const tot=res.T+res.L||1;
+  return{pT:res.T/tot,pL:res.L/tot};
 }
 function aiShouldAccuseClassic(p,placer){
-  const{pT,pL,pD}=estimateClassic(p,placer);
+  const{pT,pL}=estimateClassic(p,placer);
   const n=aliveCount(),r=risk(p),ai=p.ch.ai,L=EP(placer),T=E.table;
   const Vd=10,Vk=n<=2?10:4+6/(n-1);
   // si le joueur précédent ment, c'est LUI qui passe à la roulette avec sa propre arme
   let evCall=pL*risk(L)*Vk-pT*r*Vd;
-  const others=othersOf(p.i).filter(j=>j!==placer).reduce((s,j)=>s+risk(EP(j)),0);
-  evCall+=pD*(-r*Vd+others*Vk*.5);
   const h=p.hand,q=.4,nxR=risk(EP(nextAlive(p.i)));
   let evPass=0;
   if(h.length){
     if(h.some(c=>isTruthCard(c.t,T)))evPass=q*.4*nxR*Vk;
-    else if(h.some(c=>c.t==='DIABLE'))evPass=q*.5*r*Vk;
     else evPass=-q*.6*r*Vd;
   }
   const bias=(ai.aggr-.5)*.3*r*Vd+p.grudge[placer]*.04*r*Vd+rand(-.08,.08)*r*Vd;
@@ -298,13 +285,12 @@ async function input(i,kind,data={},ms=0){
     HOOK.ask(i,kind,data,ms);
   });
 }
-/* valide une sélection de cartes : 1 à maxPlay cartes distinctes ; le Diable se joue seul */
+/* valide une sélection de cartes : 1 à maxPlay cartes distinctes */
 function validPlay(p,v){
   if(!Array.isArray(v))v=[v];
   v=[...new Set(v.map(x=>x|0))];
   if(!v.length||v.length>MD().maxPlay)return null;
   if(v.some(k=>k<0||k>=p.hand.length))return null;
-  if(v.length>1&&v.some(k=>p.hand[k].t==='DIABLE'))return null;
   return v;
 }
 function engAnswer(i,v){
@@ -462,18 +448,8 @@ async function resolveClassic(acc,placer,entry){
   const L=EP(placer);
   await announceAccusation(acc,placer,entry);
   const T=E.table,ts=entry.cards.map(c=>c.t);
-  const devil=ts.includes('DIABLE'),lie=!devil&&ts.some(t=>!isTruthCard(t,T));
-  await revealEntry(entry,devil?'LE DIABLE !':lie?'MENSONGE':'VÉRITÉ',!devil&&!lie);
-  if(devil){
-    L.caught++;
-    const victims=othersOf(placer);
-    emit({e:'flash',red:true});
-    emit({e:'cutin',seat:placer,text:'LE DIABLE',sub:`Tout le monde passe à la roulette, sauf {{n${placer}}}`});
-    await wait(1400);
-    emit({e:'log',html:`<b class="red">Carte du Diable !</b> Tout le monde passe à la roulette, sauf {{p${placer}}}.`});
-    E.nextStarter=placer;
-    return await rouletteAll(victims);
-  }
+  const lie=ts.some(t=>!isTruthCard(t,T));
+  await revealEntry(entry,lie?'MENSONGE':'VÉRITÉ',!lie);
   if(lie){
     L.caught++;
     emit({e:'say',seat:placer,text:L.kind==='ai'?line(L,'caught'):'Aïe.',ms:1600});
@@ -488,23 +464,6 @@ async function resolveClassic(acc,placer,entry){
   await wait(700);
   return await shoot(acc,acc);
 }
-/* roulette simultanée : chaque joueur de la liste presse la détente contre lui-même */
-async function rouletteAll(list){
-  list.forEach(j=>emit({e:'say',seat:j,text:EP(j).kind==='ai'?line(EP(j),'self'):'Allez… pas maintenant.',ms:1800}));
-  emit({e:'aim',pairs:list.map(j=>[j,j])});
-  for(const n of[3,2,1]){emit({e:'count',n});await wait(700)}
-  const results=list.map(j=>({s:j,t:j,real:fireGun(EP(j))}));
-  const dead=results.filter(r=>r.real).map(r=>r.t);
-  dead.forEach(eliminate);
-  emit({e:'fire',results});
-  sync();
-  results.forEach(r=>emit({e:'log',html:`{{p${r.s}}} : ${r.real?'<b class="red">BANG</b>':'clic'}`}));
-  await wait(1500);
-  emit({e:'clearAim'});
-  if(dead.length)await wait(600);
-  return dead.length;
-}
-
 function eliminate(i){const p=EP(i);p.alive=false;p.hand=[]}
 async function shoot(si,ti){
   const sh=EP(si),tg=EP(ti),self=si===ti;

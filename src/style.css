@@ -416,8 +416,6 @@ body{overflow:clip}
 .card.t-AS{background:var(--paper)}
 .card.t-JOKER{background:#18c29c}
 .card.t-JOKER .lbl{background:var(--ink);color:#18c29c}
-.card.t-DIABLE{background:var(--ink);border-color:var(--blood);box-shadow:5px 5px 0 var(--blood)}
-.card.t-DIABLE .lbl{background:var(--blood);color:var(--paper)}
 #hand.many{gap:clamp(4px,.7vw,10px)}
 @media (max-aspect-ratio:4/5){#hand.many{--cw:clamp(46px,13.5vw,74px)}}
 #reveal .flips{display:flex;gap:clamp(8px,2vw,22px);align-items:center;justify-content:center}

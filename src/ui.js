@@ -93,15 +93,15 @@ function renderHand(){
   if(!me.alive){h.innerHTML='<div class="hand-note">Tu es tombé. Tu regardes la fin de la partie.</div>';return}
   if(!V.hand.length){h.innerHTML='<div class="hand-note">Plus de cartes en main.</div>';return}
   const sels=UIS.selecting?UIS.sels:[];
-  h.innerHTML=V.hand.map((t,k)=>{const sel=sels.includes(k);const lie=sel&&(t==='DIABLE'||!isTruthCard(t,V.table));
-    return `<div class="card face t-${t}${sel?' sel':''}" data-k="${k}" tabindex="${UIS.selecting?0:-1}" role="button" aria-pressed="${sel}" aria-label="${TYPES[t].label}">${lie?`<span class="tag">${t==='DIABLE'?'DIABLE':'BLUFF'}</span>`:''}${ICONS[t]}<span class="lbl">${TYPES[t].label}</span></div>`}).join('');
+  h.innerHTML=V.hand.map((t,k)=>{const sel=sels.includes(k);const lie=sel&&!isTruthCard(t,V.table);
+    return `<div class="card face t-${t}${sel?' sel':''}" data-k="${k}" tabindex="${UIS.selecting?0:-1}" role="button" aria-pressed="${sel}" aria-label="${TYPES[t].label}">${lie?'<span class="tag">BLUFF</span>':''}${ICONS[t]}<span class="lbl">${TYPES[t].label}</span></div>`}).join('');
   h.querySelectorAll('.card').forEach(el=>{const f=()=>{if(!UIS.selecting)return;toggleSel(+el.dataset.k);SFX.tick();renderHand();UIS.onSel&&UIS.onSel()};el.onclick=f;el.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();f()}}});
 }
-/* sélection : 1 à max cartes ; le Diable se joue seul ; avec max=1 un clic remplace la sélection */
+/* sélection : 1 à max cartes ; avec max=1 un clic remplace la sélection */
 function toggleSel(k){
-  const s=UIS.sels,max=UIS.max||1,isD=V.hand[k]==='DIABLE';
+  const s=UIS.sels,max=UIS.max||1;
   if(s.includes(k)){UIS.sels=s.filter(x=>x!==k);return}
-  if(max===1||isD||s.some(x=>V.hand[x]==='DIABLE')){UIS.sels=[k];return}
+  if(max===1){UIS.sels=[k];return}
   if(s.length>=max){UIS.sels=[...s.slice(1),k];return}
   UIS.sels=[...s,k];
 }
@@ -157,7 +157,7 @@ function onAsk(kind,data,ms,answer,preview){
       buttons:[{label:'CHOISIS TES CARTES',cls:'red',id:'btn-play',disabled:true,on:()=>{if(!UIS.sels.length)return;const ks=UIS.sels.slice();clearAsk();answer(ks)}}]});
     UIS.onSel=()=>{const b=$('#btn-play');if(!b)return;const n=UIS.sels.length;b.disabled=!n;
       if(!n){b.innerHTML='<span>CHOISIS TES CARTES</span>';return}
-      const lie=UIS.sels.some(k=>V.hand[k]==='DIABLE'||!isTruthCard(V.hand[k],T));
+      const lie=UIS.sels.some(k=>!isTruthCard(V.hand[k],T));
       b.innerHTML=`<span>${lie?'BLUFFER':'POSER'} · « ${claimPhrase(T,n).toUpperCase()} »</span>`};
   }else if(kind==='accuse'){
     showPrompt({text:`${nm(data.placer)} annonce <b>${claimPhrase(V.table,data.n||1)}</b>. Tu es le suivant : tu le crois ?`,buttons:[

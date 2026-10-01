@@ -34,7 +34,7 @@ Jeu de bluff et de roulette russe dans un bar, au style graphique inspiré de Pe
 - Les modes sont déclarés dans `MODES` (`src/core.js`). Chaque mode a ses règles dans un `<template id="rules-<id>">` de `src/body.html`.
 - Le mode est choisi sur l'écran `scr-mode`, qui s'ouvre au moment de créer un salon ou de lancer le solo. Il passe ensuite par `PICKED_MODE`, `NET.mode`, `engNew(seats, mode)` et `E.mode`, puis il est affiché dans le salon et dans la barre du haut.
 - Chaque mode déclare son paquet (`deck`), la taille de main (`hand`), le nombre maximum de cartes posées par tour (`maxPlay`) et les figures de table possibles (`tables`). La résolution d'une accusation passe par `resolveChaos` ou `resolveClassic`.
-- Une pose est une entrée `{cards:[...], by, revealed}`. La demande `play` renvoie un **tableau d'indices**, validé par `validPlay` (1 à `maxPlay` cartes, le Diable toujours seul).
+- Une pose est une entrée `{cards:[...], by, revealed}`. La demande `play` renvoie un **tableau d'indices**, validé par `validPlay` (1 à `maxPlay` cartes).
 - Modes disponibles : `chaos-liar` (« Chaos Liar ») et `classic-liar` (« Classic Liar »). Une carte « Bientôt » annonce les suivants.
 
 ## Règles du mode Chaos Liar (telles que validées par le créateur)
@@ -55,20 +55,19 @@ Jeu de bluff et de roulette russe dans un bar, au style graphique inspiré de Pe
 
 ## Règles du mode Classic Liar (inspiré de Liar's Deck, le jeu de cartes de Liar's Bar)
 
-- Le paquet compte 21 cartes : 6 Rois, 6 Reines, 6 As, 2 Jokers et 1 carte du Diable. Chaque survivant reçoit 5 cartes. La figure de table (Rois, Reines ou As) est tirée à chaque manche.
+- Le paquet compte 20 cartes : 6 Rois, 6 Reines, 6 As et 2 Jokers. Pas de carte du Diable : le créateur l'a retirée. Chaque survivant reçoit 5 cartes. La figure de table (Rois, Reines ou As) est tirée à chaque manche.
 - On pose de 1 à 3 cartes en annonçant qu'elles sont toutes la figure de table. Les Jokers comptent toujours comme la figure de table. Une seule mauvaise carte suffit pour que la pose soit un mensonge.
 - Seul le joueur suivant peut accuser. Le dernier joueur à avoir des cartes doit accuser. Toute accusation termine la manche.
 - Selon la carte retournée :
   - mensonge : le menteur passe à la roulette (il tire sur lui-même) ;
-  - vérité : l'accusateur passe à la roulette ;
-  - carte du Diable : elle se joue toujours seule ; si elle est révélée, tous les autres joueurs vivants passent à la roulette en même temps (`rouletteAll`), et celui qui l'a posée est épargné.
+  - vérité : l'accusateur passe à la roulette.
 - On ne tire jamais sur un adversaire. Celui qui vient de passer à la roulette commence la manche suivante (`E.nextStarter`), ou le joueur d'après s'il est mort.
 
 ## IA
 
 - `estimatePlay` simule environ 700 mains possibles du joueur précédent, à partir des cartes que l'IA ne voit pas et de la tendance au bluff observée chez ce joueur.
 - `aiShouldAccuse` compare l'espérance d'accuser et celle de laisser passer. Elle tient compte du risque de sa propre arme, du Maître, du Chaos et de la qualité de sa main.
-- Classic Liar : `estimateClassic` est une estimation pondérée (bayésienne). Elle tire des mains de 5 cartes, puis pondère chaque main selon la probabilité qu'elle produise exactement le nombre de cartes posées, en disant vrai, en bluffant ou avec le Diable. `aiChooseClassic` pose surtout la vérité, bluffe selon la personnalité et garde le Diable comme appât.
+- Classic Liar : `estimateClassic` est une estimation pondérée (bayésienne). Elle tire des mains de 5 cartes, puis pondère chaque main selon la probabilité qu'elle produise exactement le nombre de cartes posées, en disant vrai ou en bluffant. `aiChooseClassic` pose surtout la vérité et bluffe selon la personnalité.
 - Les personnalités (`bluff`, `aggr`, `speed`) sont définies par personnage dans `CHARS`.
 
 ## Personnages
