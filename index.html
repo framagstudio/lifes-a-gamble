@@ -1309,7 +1309,8 @@ function hostStart(){
 }
 function beginHostGame(seats){
   abortEngine();resetTable();
-  ME=0;engNew(seats);wireHostHooks();
+  shuffle(seats); // placement aléatoire autour de la table à chaque partie
+  ME=seats.findIndex(s=>s.kind==='local');engNew(seats);wireHostHooks();
   E.players.forEach(p=>{if(p.peer)send(p.peer,{t:'start',seat:p.i})});
   hideScreens();updateNetPill();
   engRun();

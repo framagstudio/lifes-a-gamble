@@ -26,6 +26,7 @@ Jeu de bluff et de roulette russe dans un bar, au style graphique inspiré de Pe
 - Chaque place est de type `local`, `remote` ou `ai`. `input(i, kind, data, ms)` gère les trois cas.
   - Les types de demande sont `play`, `accuse` et `target`. Aucune n'a de délai. Pour `target`, le joueur touche une cible (jamais lui-même) puis confirme avec « Tirer sur… ».
 - En cas de déconnexion (battement de cœur toutes les 3 s, coupure après 12 s), `seatToAI(i)` fait jouer une IA à la place. Le joueur se reconnecte grâce à un jeton stocké dans le `localStorage`.
+- Les places autour de la table sont tirées au hasard à chaque partie, relances comprises (`beginHostGame`). La place de l'hôte n'est donc pas forcément la 0.
 - Les identifiants PeerJS sont de la forme `lifesagamble-v1-` suivis du code de salon à 4 caractères. Le lien de partage est `…/#CODE`.
 
 ## Règles du mode Liar (telles que validées par le créateur)
