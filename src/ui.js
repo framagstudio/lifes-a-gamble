@@ -130,7 +130,7 @@ function clearAsk(){
   document.querySelectorAll('.seat.targetable').forEach(e=>e.classList.remove('targetable','picked'));
   hidePrompt();if(V&&BUILT)renderHand();
 }
-function onAsk(kind,data,ms,answer){
+function onAsk(kind,data,ms,answer,preview){
   clearAsk();SFX.ping();
   const art=TYPES[V.table].art;
   if(kind==='play'){
@@ -145,9 +145,9 @@ function onAsk(kind,data,ms,answer){
     let pickT=null;
     const draw=()=>{
       data.cands.forEach(j=>{const el=seatEl(j);el.classList.add('targetable');el.classList.toggle('picked',j===pickT)});
-      if(pickT!=null)drawAim([[ME,pickT]]);
+      if(pickT!=null){setAims([[ME,pickT]],false);preview&&preview(pickT)}
       showPrompt({text:pickT==null?`${fmt(data.title)} · touche un adversaire`:`Cible : ${nm(pickT)}. Tu confirmes ?`,buttons:[
-        {label:pickT==null?'CHOISIS UNE CIBLE':`TIRER SUR ${esc(plainName(pickT))}`,cls:'red',id:'btn-fire',disabled:pickT==null,on:()=>{if(pickT==null)return;const t=pickT;$('#aim').innerHTML='';clearAsk();answer(t)}}]});
+        {label:pickT==null?'CHOISIS UNE CIBLE':`TIRER SUR ${esc(plainName(pickT))}`,cls:'red',id:'btn-fire',disabled:pickT==null,on:()=>{if(pickT==null)return;const t=pickT;clearAsk();answer(t)}}]});
     };
     UIS.onTarget=j=>{if(!data.cands.includes(j))return;SFX.tick();pickT=j;draw()};
     draw();
@@ -185,12 +185,24 @@ function say(i,text,ms=2300){
 function flash(red){const f=$('#flash');f.className='';void f.offsetWidth;f.className='go'+(red?' red':'')}
 function shake(){const s=$('#scene');s.classList.remove('shake');void s.offsetWidth;s.classList.add('shake')}
 function burstAt(x,y,real){const b=document.createElement('div');b.className='burst '+(real?'bang':'clic');b.innerHTML=`<span>${real?'BANG!':'CLIC'}</span>`;b.style.left=x+'px';b.style.top=y+'px';document.body.appendChild(b);setTimeout(()=>b.remove(),950)}
-function drawAim(pairs){
+/* visées en cours : tireur -> {t: cible, final: validée ?} */
+let AIMS={};
+function setAims(pairs,final=true){pairs.forEach(([s,t])=>{AIMS[s]={t,final}});renderAims()}
+function clearAims(){AIMS={};$('#aim').innerHTML='';document.querySelectorAll('.seat.aimed').forEach(e=>e.classList.remove('aimed'))}
+function renderAims(){
+  if(!BUILT||!V)return;
   const svg=$('#aim');svg.setAttribute('viewBox',`0 0 ${innerWidth} ${innerHeight}`);
-  svg.innerHTML=pairs.map(([from,to])=>{const a=centerOf(fboxOf(from)),b=centerOf(fboxOf(to));
-    if(from===to)return `<circle cx="${a.x}" cy="${a.y}" r="${fboxOf(to).getBoundingClientRect().width*.42}"/>`;
-    return `<line x1="${a.x}" y1="${a.y}" x2="${b.x}" y2="${b.y}"/><circle cx="${b.x}" cy="${b.y}" r="22"/>`}).join('');
+  document.querySelectorAll('.seat.aimed').forEach(e=>e.classList.remove('aimed'));
+  svg.innerHTML=Object.entries(AIMS).map(([s,{t,final}])=>{
+    s=+s;const col=CHARS[VP(s).ci].c,a=centerOf(fboxOf(s)),b=centerOf(fboxOf(t));
+    seatEl(t).classList.add('aimed');
+    const cls=final?'fin':'pre';
+    if(s===t)return `<circle class="${cls}" style="--lc:${col}" cx="${a.x}" cy="${a.y}" r="${fboxOf(t).getBoundingClientRect().width*.42}"/>`;
+    const dx=b.x-a.x,dy=b.y-a.y,L=Math.hypot(dx,dy)||1,ox=-dy/L*6*((s%2)?1:-1),oy=dx/L*6*((s%2)?1:-1);
+    return `<g class="${cls}" style="--lc:${col}"><line x1="${a.x+ox}" y1="${a.y+oy}" x2="${b.x+ox}" y2="${b.y+oy}"/><circle cx="${b.x+ox}" cy="${b.y+oy}" r="22"/><text x="${a.x+(b.x-a.x)*.5+ox}" y="${a.y+(b.y-a.y)*.5+oy-8}">${esc(plainName(s))}${final?' ✓':'…'}</text></g>`;
+  }).join('');
 }
+window.addEventListener('resize',()=>renderAims());
 function cylSVG(fired){
   let s='';for(let k=0;k<6;k++){const a=(k*60-90)*Math.PI/180,x=50+28*Math.cos(a),y=50+28*Math.sin(a);s+=`<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="10" fill="${k<fired?'#2a1a20':'#f2b33d'}" stroke="${O}" stroke-width="3"/>`}
   return `<svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="46" fill="#5d5458" stroke="${O}" stroke-width="5"/><circle cx="50" cy="50" r="40" fill="none" stroke="#8a8085" stroke-width="2"/>${s}<circle cx="50" cy="50" r="8" fill="#2a1a20" stroke="${O}" stroke-width="3"/></svg>`;
@@ -223,7 +235,8 @@ function onEvent(ev){
     case 'log':log(fmt(ev.html));break;
     case 'cutin':cutIn(ev.seat!=null?chOf(ev.seat):null,ev.text,fmt(ev.sub),null,ev.seat??7);break;
     case 'reveal':showReveal(ev.t,ev.verdict,ev.truth);break;
-    case 'aim':drawAim(ev.pairs);break;
+    case 'aim':setAims(ev.pairs,true);break;
+    case 'aimset':setAims([[ev.s,ev.t]],!!ev.final);break;
     case 'shotbox':$('#shotbox').innerHTML=`<div class="duel">${esc(plainName(ev.s))} ${ev.s===ev.t?'<em>➜ SUR LUI-MÊME</em>':`<em>➜</em> ${esc(plainName(ev.t))}`}</div><div class="cyl spin">${cylSVG(ev.fired)}</div><div class="odds">Chance de balle réelle : 1 sur ${6-ev.fired}</div>`;SFX.spin();break;
     case 'fire':{
       let any=false;
@@ -231,7 +244,7 @@ function onEvent(ev){
         const el=seatEl(r.t);el.classList.remove('hit');void el.offsetWidth;el.classList.add('hit')});
       if(any){SFX.bang();flash();shake()}else SFX.click();
       break}
-    case 'clearAim':$('#aim').innerHTML='';$('#shotbox').innerHTML='';break;
+    case 'clearAim':clearAims();$('#shotbox').innerHTML='';break;
     case 'count':{const d=document.createElement('div');d.className='count';d.textContent=ev.n;document.body.appendChild(d);SFX.tick();setTimeout(()=>d.remove(),700);break}
     case 'flash':flash(ev.red);break;
     case 'end':onEnd(ev);break;
@@ -265,7 +278,7 @@ function closeModal(){$('#modal').hidden=true}
 function resetTable(){
   clearAsk();
   document.querySelectorAll('.fly,.burst,.count,.bubble').forEach(e=>e.remove());
-  $('#aim').innerHTML='';$('#shotbox').innerHTML='';$('#reveal').hidden=true;$('#cutin').hidden=true;$('#log').innerHTML='';
+  clearAims();$('#shotbox').innerHTML='';$('#reveal').hidden=true;$('#cutin').hidden=true;$('#log').innerHTML='';
   closeModal();hideEnd();BUILT=false;deadShown=false;V=null;
   const scene=$('#scene');for(let i=0;i<4;i++){const el=seatEl(i);el.innerHTML='';scene.appendChild(el)}
 }
@@ -286,7 +299,7 @@ function askKick(i){
 function wireHostHooks(){
   HOOK.emit=ev=>{onEvent(ev);if(MODE==='host')for(const p of E.players)if(p.peer)send(p.peer,{t:'ev',ev})};
   HOOK.sync=()=>{V=stateFor(ME);renderAll();if(MODE==='host')for(const p of E.players)if(p.peer)send(p.peer,{t:'state',s:stateFor(p.i)})};
-  HOOK.ask=(i,kind,data,ms)=>{const p=EP(i);if(p.kind==='local')onAsk(kind,data,ms,v=>engAnswer(i,v));else if(p.peer)send(p.peer,{t:'ask',kind,data,ms})};
+  HOOK.ask=(i,kind,data,ms)=>{const p=EP(i);if(p.kind==='local')onAsk(kind,data,ms,v=>engAnswer(i,v),v=>engAimPreview(i,v));else if(p.peer)send(p.peer,{t:'ask',kind,data,ms})};
   HOOK.cancelAsk=i=>{const p=EP(i);if(p.kind==='local')clearAsk();else if(p.peer)send(p.peer,{t:'cancelAsk'})};
 }
 
@@ -389,6 +402,7 @@ function hostOnData(conn,d){
     return;
   }
   if(d.t==='answer'&&E){const p=E.players.find(p=>p.peer===conn);if(p)engAnswer(p.i,d.v);return}
+  if(d.t==='aiming'&&E){const p=E.players.find(p=>p.peer===conn);if(p)engAimPreview(p.i,d.v);return}
   if(d.t==='leave'){hostOnClose(conn);try{conn.close()}catch(e){}}
 }
 function hostOnClose(conn){
@@ -484,7 +498,7 @@ function clientOnData(d){
     case 'start':closeModal();hideEnd();resetTable();ME=d.seat|0;hideScreens();updateNetPill();break;
     case 'state':V=d.s;renderAll();break;
     case 'ev':onEvent(d.ev);break;
-    case 'ask':if(V)onAsk(d.kind,d.data,d.ms,v=>send(NET.conn,{t:'answer',v}));break;
+    case 'ask':if(V)onAsk(d.kind,d.data,d.ms,v=>send(NET.conn,{t:'answer',v}),v=>send(NET.conn,{t:'aiming',v}));break;
     case 'cancelAsk':clearAsk();break;
     case 'kicked':NET.leaving=true;clientShutdown();MODE=null;resetTable();modal('REMPLACÉ','L’hôte a donné ta place à une IA.',[{label:'MENU',cls:'red',on:()=>{closeModal();toMenu()}}]);break;
     case 'bye':NET.leaving=true;clientShutdown();MODE=null;modal('SALON FERMÉ','L’hôte a quitté la partie.',[{label:'MENU',cls:'red',on:()=>{closeModal();toMenu()}}]);break;

@@ -185,8 +185,7 @@ button:focus-visible,.card:focus-visible,.pick:focus-visible{outline:3px solid v
 
 /* aim + shot */
 #aim{position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:30}
-#aim line{stroke:var(--blood);stroke-width:4;stroke-dasharray:14 9;animation:dash .6s linear infinite;filter:drop-shadow(0 0 4px var(--blood))}
-#aim circle{fill:none;stroke:var(--blood);stroke-width:4}
+
 @keyframes dash{to{stroke-dashoffset:-23}}
 #shotbox{position:fixed;left:50%;top:48%;transform:translate(-50%,-50%);z-index:35;display:flex;flex-direction:column;align-items:center;gap:8px;pointer-events:none}
 #shotbox:empty{display:none}
@@ -372,3 +371,14 @@ body{overflow:clip}
 .seat.targetable.picked .fbox{animation:none;transform:scale(1.12);filter:drop-shadow(6px 6px 0 var(--blood))}
 .seat.targetable.picked .fbox::after{background-color:rgba(227,18,43,.25);border-width:6px}
 .seat.targetable:not(.picked) .fbox::after{opacity:.55}
+
+/* visées en direct */
+#aim .fin line,#aim .pre line{stroke:var(--lc,var(--blood));stroke-linecap:round}
+#aim .fin line{stroke-width:5;stroke-dasharray:16 8;animation:dash .5s linear infinite;filter:drop-shadow(0 0 5px var(--blood))}
+#aim .pre line{stroke-width:3;stroke-dasharray:4 10;opacity:.85;animation:dash 1.2s linear infinite}
+#aim circle{fill:none;stroke:var(--lc,var(--blood));stroke-width:4}
+#aim .pre circle{stroke-dasharray:6 6;animation:spinring 2s linear infinite;transform-box:fill-box;transform-origin:center}
+#aim .fin circle{stroke:var(--blood)}
+#aim text{font-family:var(--f-display);font-size:14px;letter-spacing:.06em;fill:var(--paper);paint-order:stroke;stroke:var(--ink);stroke-width:4px;text-anchor:middle}
+@keyframes spinring{to{transform:rotate(360deg)}}
+.seat.aimed .fbox{filter:drop-shadow(0 0 0 var(--ink)) drop-shadow(0 0 10px var(--blood))}

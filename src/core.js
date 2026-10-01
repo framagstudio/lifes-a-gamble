@@ -162,7 +162,15 @@ function aiDecide(i,kind,data){
 async function input(i,kind,data={},ms=0){
   const p=EP(i);
   if(p.kind==='ai'){
-    const base=kind==='play'?rand(800,1600):kind==='accuse'?rand(1100,2300):rand(1000,1600);
+    if(kind==='target'){
+      // l'IA hésite visiblement avant de choisir
+      const final=aiDecide(i,kind,data),sp=p.ch.ai.speed;
+      if(data.cands.length>1&&Math.random()<.6){emit({e:'aimset',s:i,t:pick(data.cands.filter(c=>c!==final)),final:false});await wait(rand(700,1100)*sp)}
+      emit({e:'aimset',s:i,t:final,final:false});await wait(rand(800,1200)*sp);
+      emit({e:'aimset',s:i,t:final,final:true});
+      return final;
+    }
+    const base=kind==='play'?rand(800,1600):rand(1100,2300);
     await wait(base*p.ch.ai.speed);
     return aiDecide(i,kind,data);
   }
@@ -181,8 +189,14 @@ function engAnswer(i,v){
   const{kind,data,finish}=p.pending;
   if(kind==='play'){v=v|0;if(v<0||v>=p.hand.length)return}
   else if(kind==='accuse')v=!!v;
-  else{v=v|0;if(!data.cands.includes(v))return}
+  else{v=v|0;if(!data.cands.includes(v))return;emit({e:'aimset',s:i,t:v,final:true})}
   finish(v);
+}
+/* visée en direct : un humain survole/sélectionne une cible avant de valider */
+function engAimPreview(i,v){
+  const p=E&&EP(i);if(!p||!p.pending||p.pending.kind!=='target')return;
+  v=v|0;if(!p.pending.data.cands.includes(v))return;
+  emit({e:'aimset',s:i,t:v,final:false});
 }
 function seatToAI(i,why){
   const p=EP(i);if(p.kind==='ai')return;
@@ -213,6 +227,7 @@ async function engRound(){
   await wait(1400);
   emit({e:'log',html:`Manche ${E.round} : table des <b>${TYPES[E.table].plural}</b>.`});
   let s=E.starter;if(!EP(s).alive)s=nextAlive(s);
+  E.starter=nextAlive(s); // la manche suivante commence au joueur après celui-ci
   const order=[];for(let k=0;k<4;k++){const j=(s+k)%4;if(EP(j).alive)order.push(j)}
   for(let n=0;n<3;n++)for(const j of order){EP(j).hand.push(deck.pop());emit({e:'deal',seat:j});await wait(270)}
   sync();
@@ -238,13 +253,11 @@ async function engRound(){
     E.cur=-1;E.deciding=-1;sync();
     if(acc!=null){
       await resolveAccusation(acc,cur,entry);
-      E.starter=EP(acc).alive?acc:nextAlive(acc);
       await wait(600);
       return;
     }
     cur=nextAlive(cur);
   }
-  E.starter=nextAlive(E.starter);
 }
 async function accusationWindow(placer){
   const nx=nextAlive(placer);if(nx===placer)return null;
@@ -316,8 +329,8 @@ async function chaos(){
   const shooters=aliveIdx(),targets={};
   for(const j of shooters)if(EP(j).kind==='ai')targets[j]=aiPickTarget(EP(j),{chaos:true});
   const humans=shooters.filter(j=>EP(j).kind!=='ai');
+  shooters.forEach(j=>{if(targets[j]!=null)emit({e:'aimset',s:j,t:targets[j],final:true})});
   if(humans.length){
-    emit({e:'aim',pairs:shooters.filter(j=>targets[j]!=null).map(j=>[j,targets[j]])});
     await Promise.all(humans.map(h=>input(h,'target',{cands:othersOf(h),title:'<b>CHAOS</b> · Choisis ta cible',ctx:{chaos:true}}).then(v=>{targets[h]=v})));
   }
   emit({e:'aim',pairs:shooters.map(j=>[j,targets[j]])});

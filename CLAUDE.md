@@ -40,6 +40,8 @@ Jeu de bluff et de roulette russe dans un bar, au style graphique inspiré de Pe
   - mensonge : l'accusateur tire sur qui il veut ;
   - Maître : celui qui l'a posée tire sur qui il veut ;
   - Chaos : tout le monde tire en même temps.
+- Le premier joueur de la partie est tiré au hasard. À chaque manche suivante, c'est le joueur après le premier joueur de la manche précédente qui commence, en sautant les éliminés.
+- Pendant les tirs, tout le monde voit en direct qui vise qui. La visée en cours est en pointillés fins avec « … », la visée validée est en trait épais avec « ✓ ». Événement `aimset`, message client `aiming`, fonction `engAimPreview`.
 - Le revolver a 6 chambres et 1 balle. Il est rechargé après une balle réelle. Le dernier joueur en vie gagne.
 
 ## IA
