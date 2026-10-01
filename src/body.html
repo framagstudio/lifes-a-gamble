@@ -8,6 +8,7 @@
     <div class="mini-logo ransom" id="minilogo"></div>
     <div class="topmid">
       <div class="round"><span id="roundlbl">MANCHE 1</span></div>
+      <div class="netpill modepill" id="modepill" hidden></div>
       <div class="netpill" id="netpill" hidden></div>
     </div>
     <div class="tools">
@@ -56,6 +57,17 @@
   </div>
 </section>
 
+<section class="screen" id="scr-mode" hidden>
+  <div class="inner">
+    <div class="sel-head ransom" id="modehead"></div>
+    <div class="tagline"><span id="mode-for">Partie solo</span></div>
+    <div class="modes" id="modes"></div>
+    <div class="row">
+      <button class="btn dark" id="btn-mode-back"><span>RETOUR</span></button>
+    </div>
+  </div>
+</section>
+
 <section class="screen" id="scr-select" hidden>
   <div class="inner">
     <div class="sel-head ransom" id="selhead"></div>
@@ -90,6 +102,7 @@
 <section class="screen" id="scr-lobby" hidden>
   <div class="inner">
     <div class="sel-head ransom" id="lobhead"></div>
+    <div class="modebar" id="lob-mode"></div>
     <div class="lobby">
       <div class="codecard" id="lob-codecard">
         <span class="k">CODE DU SALON</span>
@@ -140,25 +153,30 @@
 <div id="rules" hidden>
   <div class="panel">
     <button class="btn red close" id="btn-rclose"><span>FERMER</span></button>
-    <h2>LIAR</h2>
-    <p>Bluffe, démasque, survis. Le dernier joueur debout gagne la partie.</p>
-    <h3>LE PAQUET</h3>
-    <ul><li>12 cartes : 5 Rois, 5 Reines, 1 Maître, 1 Chaos.</li><li>Chaque survivant reçoit 3 cartes au début de la manche.</li><li>La manche annonce une carte de table : Rois ou Reines.</li></ul>
-    <h3>TON TOUR</h3>
-    <ul><li>Pose une carte face cachée en annonçant la carte de table.</li><li>Tu peux mentir. Le Maître et le Chaos sont toujours des mensonges.</li><li>Il n’existe que 5 cartes de chaque figure. Surveille le compteur d’annonces.</li></ul>
-    <h3>« MENTEUR ! »</h3>
-    <ul>
-      <li>Seul le <b>joueur suivant</b> peut accuser celui qui vient de poser. Sinon il laisse passer et joue à son tour.</li>
-      <li>Toute accusation termine la manche : on ramasse, on mélange et on redistribue.</li>
-      <li><b>Vérité</b> : l’accusateur retourne l’arme contre lui.</li>
-      <li><b>Mensonge</b> : l’accusateur tire sur le joueur de son choix.</li>
-      <li><b>Maître</b> : c’est celui qui l’a posée qui tire sur qui il veut.</li>
-      <li><b>Chaos</b> : tout le monde vise, compte à rebours, tirs simultanés.</li>
-    </ul>
-    <h3>LE REVOLVER</h3>
-    <ul><li>6 chambres, 1 balle réelle. Chaque tir à blanc rapproche la balle : 1/6, 1/5, 1/4…</li><li>Après une balle réelle, l’arme est rechargée.</li><li>Quand tu as le droit de tirer, touche ta cible puis confirme. Pas de chrono, et impossible de se viser soi-même.</li></ul>
+    <div id="rules-body"></div>
     <h3>EN LIGNE</h3>
-    <ul><li>L’hôte crée un salon et partage le code ou le lien. Jusqu’à 4 joueurs.</li><li>Quand l’hôte ferme le salon, les places vides sont prises par des IA.</li><li>L’hôte doit garder sa page ouverte : la partie tourne sur son appareil.</li><li>Si quelqu’un se déconnecte, une IA joue à sa place jusqu’à son retour.</li></ul>
+    <ul><li>L’hôte choisit le mode, crée un salon et partage le code ou le lien. Jusqu’à 4 joueurs.</li><li>Quand l’hôte ferme le salon, les places vides sont prises par des IA. Les places autour de la table sont tirées au hasard.</li><li>L’hôte doit garder sa page ouverte : la partie tourne sur son appareil.</li><li>Si quelqu’un se déconnecte, une IA joue à sa place jusqu’à son retour.</li></ul>
   </div>
 </div>
+
+<template id="rules-chaos-liar">
+  <h2>CHAOS LIAR</h2>
+  <p>Bluffe, démasque, survis. Le dernier joueur debout gagne la partie.</p>
+  <h3>LE PAQUET</h3>
+  <ul><li>12 cartes : 5 Rois, 5 Reines, 1 Maître, 1 Chaos.</li><li>Chaque survivant reçoit 3 cartes au début de la manche.</li><li>La manche annonce une carte de table : Rois ou Reines.</li></ul>
+  <h3>TON TOUR</h3>
+  <ul><li>Pose une carte face cachée en annonçant la carte de table.</li><li>Tu peux mentir. Le Maître et le Chaos sont toujours des mensonges.</li><li>Il n’existe que 5 cartes de chaque figure. Surveille le compteur d’annonces.</li><li>Le premier joueur est tiré au hasard. À chaque nouvelle manche, c’est au joueur suivant de commencer.</li></ul>
+  <h3>« MENTEUR ! »</h3>
+  <ul>
+    <li>Seul le <b>joueur suivant</b> peut accuser celui qui vient de poser. Sinon il laisse passer et joue à son tour.</li>
+    <li>Si tu es le <b>dernier à avoir des cartes</b>, tu ne peux pas poser : tu dois accuser la dernière carte posée.</li>
+    <li>Toute accusation termine la manche : on ramasse, on mélange et on redistribue.</li>
+    <li><b>Vérité</b> : l’accusateur retourne l’arme contre lui.</li>
+    <li><b>Mensonge</b> : l’accusateur tire sur le joueur de son choix.</li>
+    <li><b>Maître</b> : c’est celui qui l’a posée qui tire sur qui il veut.</li>
+    <li><b>Chaos</b> : tout le monde vise, compte à rebours, tirs simultanés.</li>
+  </ul>
+  <h3>LE REVOLVER</h3>
+  <ul><li>6 chambres, 1 balle réelle. Chaque tir à blanc rapproche la balle : 1/6, 1/5, 1/4…</li><li>Après une balle réelle, l’arme est rechargée.</li><li>Pour tirer, touche ta cible puis confirme. Tout le monde voit qui tu vises. Impossible de se viser soi-même.</li></ul>
+</template>
 <div id="wipe"></div>

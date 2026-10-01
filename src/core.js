@@ -32,6 +32,13 @@ const CHARS=[
 ];
 const PASS_LINES=['Je passe.','Ça passe… pour cette fois.','Hm. D’accord.','Je te crois. Pour l’instant.'];
 
+/* ---------- modes de jeu ---------- */
+const MODES=[
+ {id:'chaos-liar',name:'CHAOS LIAR',color:'#e3122b',players:'1 à 4 joueurs · IA pour compléter',
+  pitch:'Bluffe sur des Rois et des Reines. Le joueur suivant peut crier « Menteur ! ». La carte Maître et la carte Chaos peuvent tout renverser.'}
+];
+const modeOf=id=>MODES.find(m=>m.id===id)||MODES[0];
+
 /* ---------- cartes ---------- */
 const TYPES={ROI:{label:'ROI',plural:'ROIS',art:'un ROI'},REINE:{label:'REINE',plural:'REINES',art:'une REINE'},CHAOS:{label:'CHAOS'},MAITRE:{label:'MAÎTRE'}};
 const ICONS={
@@ -62,14 +69,14 @@ function fireGun(p){const real=p.gun.fired===p.gun.bullet;p.gun.fired++;if(real)
 const line=(p,k,c)=>{const a=c?TYPES[c].art:'';return pick(p.ch.lines[k]).replace('{a}',a).replace('{A}',a.charAt(0).toUpperCase()+a.slice(1))};
 
 /* seats : [{name, ci, kind:'local'|'remote'|'ai', peer, token}] — index = place autour de la table */
-function engNew(seats){
+function engNew(seats,mode='chaos-liar'){
   E={players:seats.map((s,i)=>({i,name:s.name,ci:s.ci,ch:CHARS[s.ci],kind:s.kind,peer:s.peer||null,token:s.token||null,wasRemote:!!s.token,
       alive:true,hand:[],gun:newGun(),grudge:[0,0,0,0],caught:0,reveals:0,pending:null})),
-     table:'ROI',claims:0,pile:[],revealed:[],round:0,starter:Math.floor(Math.random()*4),cur:-1,deciding:-1,over:false};
+     mode:modeOf(mode).id,table:'ROI',claims:0,pile:[],revealed:[],round:0,starter:Math.floor(Math.random()*4),cur:-1,deciding:-1,over:false};
 }
 /* état visible par la place v (seule SA main est envoyée) */
 function stateFor(v){
-  return{round:E.round,table:E.table,claims:E.claims,cur:E.cur,deciding:E.deciding,over:E.over,
+  return{mode:E.mode,round:E.round,table:E.table,claims:E.claims,cur:E.cur,deciding:E.deciding,over:E.over,
     pile:E.pile.map(e=>({t:e.revealed?e.card.t:null,rot:e.rot,dx:e.dx,dy:e.dy})),
     players:E.players.map(p=>({name:p.name,ci:p.ci,alive:p.alive,n:p.hand.length,fired:p.gun.fired,ai:p.kind==='ai',rm:p.kind==='remote'})),
     hand:(v>=0&&v<4)?EP(v).hand.map(c=>c.t):[]};
@@ -238,6 +245,14 @@ async function engRound(){
       emit({e:'cutin',seat:null,text:'NOUVELLE DONNE',sub:'Toutes les cartes sont sur la table'});await wait(1400);break;
     }
     for(let k=0;k<4;k++){const j=(cur+k)%4;if(EP(j).alive&&EP(j).hand.length){cur=j;break}}
+    /* Dernier à avoir des cartes : il ne peut pas poser, il doit accuser la dernière carte posée */
+    const last=E.pile[E.pile.length-1];
+    if(soleHolder(cur)&&last&&!last.revealed&&last.by!==cur&&EP(last.by).alive){
+      await forcedAccuseNotice(cur,last.by);
+      await resolveAccusation(cur,last.by,last);
+      await wait(600);
+      return;
+    }
     E.cur=cur;sync();
     const p=EP(cur);
     const k=await input(cur,'play');
@@ -259,8 +274,15 @@ async function engRound(){
     cur=nextAlive(cur);
   }
 }
+const soleHolder=i=>{const h=aliveIdx().filter(j=>EP(j).hand.length);return h.length===1&&h[0]===i};
+async function forcedAccuseNotice(i,placer){
+  emit({e:'log',html:`{{p${i}}} est le dernier à avoir des cartes : il ne peut pas poser et doit accuser {{p${placer}}}.`});
+  emit({e:'say',seat:i,text:EP(i).kind==='ai'?'Plus le choix…':'Je n’ai plus le choix.',ms:1600});
+  await wait(900);
+}
 async function accusationWindow(placer){
   const nx=nextAlive(placer);if(nx===placer)return null;
+  if(soleHolder(nx)){await forcedAccuseNotice(nx,placer);return nx}
   E.deciding=nx;sync();
   const yes=await input(nx,'accuse',{placer});
   E.deciding=-1;sync();

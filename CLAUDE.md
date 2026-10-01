@@ -29,11 +29,18 @@ Jeu de bluff et de roulette russe dans un bar, au style graphique inspiré de Pe
 - Les places autour de la table sont tirées au hasard à chaque partie, relances comprises (`beginHostGame`). La place de l'hôte n'est donc pas forcément la 0.
 - Les identifiants PeerJS sont de la forme `lifesagamble-v1-` suivis du code de salon à 4 caractères. Le lien de partage est `…/#CODE`.
 
-## Règles du mode Liar (telles que validées par le créateur)
+## Modes de jeu
+
+- Les modes sont déclarés dans `MODES` (`src/core.js`). Chaque mode a ses règles dans un `<template id="rules-<id>">` de `src/body.html`.
+- Le mode est choisi sur l'écran `scr-mode`, qui s'ouvre au moment de créer un salon ou de lancer le solo. Il passe ensuite par `PICKED_MODE`, `NET.mode`, `engNew(seats, mode)` et `E.mode`, puis il est affiché dans le salon et dans la barre du haut.
+- Pour l'instant, il n'y a qu'un seul mode, `chaos-liar` (« Chaos Liar »). Une carte « Bientôt » annonce les suivants.
+
+## Règles du mode Chaos Liar (telles que validées par le créateur)
 
 - Le paquet compte 12 cartes : 5 Rois, 5 Reines, 1 Maître et 1 Chaos. Chaque survivant reçoit 3 cartes, et une figure de table (Rois ou Reines) est tirée par manche.
 - À son tour, on pose une carte face cachée en annonçant la figure de table. Le Maître et le Chaos sont toujours des mensonges.
 - **Seul le joueur suivant** peut crier « Menteur », sans limite de temps pour décider.
+- Le **dernier joueur qui a encore des cartes** ne peut pas poser : il doit accuser la dernière carte posée (`soleHolder`, `forcedAccuseNotice`).
 - **Toute accusation termine la manche**, qu'elle soit juste ou non : on redistribue.
 - Selon la carte retournée :
   - vérité : l'accusateur se tire dessus ;
@@ -61,6 +68,6 @@ Ce sont des créations **originales** : Señor Oro, Don Velluto, La Comandante e
 
 ## Idées pour la suite
 
-- D'autres modes de jeu, évoqués par le créateur.
+- D'autres modes de jeu (ajouter une entrée dans `MODES` et un template de règles).
 - Un relais TURN pour les réseaux très verrouillés.
 - Un réglage de difficulté pour les IA.

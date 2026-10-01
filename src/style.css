@@ -23,7 +23,7 @@ button:focus-visible,.card:focus-visible,.pick:focus-visible{outline:3px solid v
 .rl.v2{background:var(--blood);color:var(--paper)}
 .rl.v3{color:var(--paper);text-shadow:.06em .06em 0 var(--blood)}
 .rl.v4{background:var(--paper);color:var(--blood)}
-.rl.sp{width:.3em}
+.rl.sp{width:.45em}
 
 /* ===== buttons ===== */
 .btn{font-family:var(--f-display);font-size:clamp(17px,2.4vh,22px);letter-spacing:.04em;background:var(--paper);color:var(--ink);border:0;padding:.42em 1.1em;transform:skew(-12deg);box-shadow:5px 5px 0 var(--blood);cursor:pointer;transition:transform .12s,background .12s,color .12s,box-shadow .12s}
@@ -382,3 +382,23 @@ body{overflow:clip}
 #aim text{font-family:var(--f-display);font-size:14px;letter-spacing:.06em;fill:var(--paper);paint-order:stroke;stroke:var(--ink);stroke-width:4px;text-anchor:middle}
 @keyframes spinring{to{transform:rotate(360deg)}}
 .seat.aimed .fbox{filter:drop-shadow(0 0 0 var(--ink)) drop-shadow(0 0 10px var(--blood))}
+
+/* choix du mode */
+.modes{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,320px),420px));gap:24px;justify-content:center;width:100%}
+.modecard{position:relative;background:var(--ink);border:3px solid var(--paper);box-shadow:10px 10px 0 var(--c,var(--blood));padding:22px 22px 20px;display:flex;flex-direction:column;gap:12px;transform:rotate(-1deg);min-width:0}
+.modecard::before{content:"";position:absolute;inset:0;background:repeating-linear-gradient(-30deg,transparent 0 22px,rgba(227,18,43,.08) 22px 40px);pointer-events:none}
+.modecard>*{position:relative}
+.modecard .mname{font-size:clamp(28px,3.6vw,42px);line-height:1.15;white-space:nowrap}
+.modecard .mpitch{margin:0;font-size:18px;font-weight:700;line-height:1.3;max-width:40ch}
+.modecard .mplayers{margin:0;font-size:15px;color:var(--brass);font-weight:700;letter-spacing:.04em;text-transform:uppercase}
+.modecard .row{justify-content:flex-start;gap:14px;margin-top:4px}
+.modecard.soon{border-style:dashed;border-color:rgba(251,247,244,.35);box-shadow:none;transform:rotate(1deg);justify-content:center;opacity:.75}
+.modecard.soon .mname{font-family:var(--f-display);color:var(--muted);letter-spacing:.06em;font-size:36px}
+.modecard.soon .mpitch{color:var(--muted)}
+.modebar{display:flex;align-items:center;gap:14px;flex-wrap:wrap;justify-content:center}
+.modebar .k{font-family:var(--f-display);letter-spacing:.1em;background:var(--blood);padding:0 10px;transform:skew(-12deg)}
+.modebar b{font-weight:400;font-size:clamp(24px,4vw,34px)}
+.modebar .btn{font-size:16px;padding:.3em .9em}
+.modepill{border-color:var(--blood);background:var(--blood)}
+
+.rw{display:inline-block;white-space:nowrap}

@@ -12,14 +12,15 @@ let MODE=null;          // 'solo' | 'host' | 'client'
 let ME=0;               // ma place autour de la table
 let V=null;             // état visible
 let BUILT=false, deadShown=false, soloChar=0;
+let PICKED_MODE='chaos-liar', MODE_FLOW='solo';
 const UIS={selecting:false,sel:null,onTarget:null};
 
 function ransom(text,seed=0){
-  return [...text].map((ch,k)=>{
-    if(ch===' ')return '<span class="rl sp"> </span>';
+  let k=-1;
+  // chaque mot reste d'un bloc (pas de coupure au milieu d'un mot)
+  return String(text).split(' ').map(w=>{k++;return `<span class="rw">${[...w].map(ch=>{k++;
     const v=(k*7+seed*3+(k>>1))%5,r=((k*37+seed*11)%11)-5;
-    return `<span class="rl v${v}" style="--r:${r}deg">${esc(ch)}</span>`;
-  }).join('');
+    return `<span class="rl v${v}" style="--r:${r}deg">${esc(ch)}</span>`}).join('')}</span>`}).join('<span class="rl sp"> </span>');
 }
 const faceHTML=t=>`<div class="card face t-${t}">${ICONS[t]}<span class="lbl">${TYPES[t].label}</span></div>`;
 const backHTML=()=>`<div class="card back"></div>`;
@@ -96,6 +97,7 @@ function renderCenter(){
   $('#claims').innerHTML=`<b>${V.claims}</b> annonce${V.claims>1?'s':''} · seulement <b>5</b> ${TYPES[V.table].plural} existent`;
   $('#pile').innerHTML=V.pile.map(e=>`<div class="pc" style="transform:translate(-50%,-50%) translate(${e.dx}px,${e.dy}px) rotate(${e.rot}deg)">${e.t?faceHTML(e.t):backHTML()}</div>`).join('');
   $('#roundlbl').textContent=`MANCHE ${V.round||1}`;
+  const mp=$('#modepill');if(V.mode){mp.hidden=false;mp.innerHTML=`<span>${modeOf(V.mode).name}</span>`}
 }
 function renderAll(){
   if(!V)return;
@@ -286,7 +288,7 @@ function toMenu(){
   abortEngine();
   if(MODE==='host')hostShutdown();
   if(MODE==='client')clientShutdown();
-  MODE=null;resetTable();updateNetPill();
+  MODE=null;resetTable();updateNetPill();$('#modepill').hidden=true;
   history.replaceState(null,'',location.pathname);
   showScreen('scr-title');
 }
@@ -308,7 +310,7 @@ function startSolo(ci){
   abortEngine();resetTable();
   MODE='solo';ME=0;soloChar=ci;
   const others=shuffle([0,1,2,3].filter(c=>c!==ci));
-  engNew([{name:'Toi',ci,kind:'local'},...others.map(c=>({name:CHARS[c].name,ci:c,kind:'ai'}))]);
+  engNew([{name:'Toi',ci,kind:'local'},...others.map(c=>({name:CHARS[c].name,ci:c,kind:'ai'}))],PICKED_MODE);
   wireHostHooks();hideScreens();updateNetPill();
   engRun();
 }
@@ -341,7 +343,7 @@ function updateNetPill(){
 /* ---------- HÔTE ---------- */
 function hostCreate(name){
   if(!peerAvailable()){profileErr('Le module réseau n’a pas pu se charger. Vérifie ta connexion internet puis recharge la page.');return}
-  MODE='host';NET.stage='lobby';NET.leaving=false;
+  MODE='host';NET.stage='lobby';NET.leaving=false;NET.mode=PICKED_MODE;
   NET.slots=[{name,ci:null,kind:'local',token:'host',conn:null}];
   openPeer(0);
 }
@@ -371,7 +373,7 @@ function netErrText(err){
   if(t==='browser-incompatible')return 'Ce navigateur ne gère pas les connexions directes. Essaie Chrome, Firefox ou Safari récent.';
   return 'La connexion a échoué. Réessaie dans un instant.';
 }
-function lobbyFor(idx){return{code:NET.code,you:idx,slots:NET.slots.map(s=>({name:s.name,ci:s.ci}))}}
+function lobbyFor(idx){return{mode:NET.mode,code:NET.code,you:idx,slots:NET.slots.map(s=>({name:s.name,ci:s.ci}))}}
 function broadcastLobby(){NET.slots.forEach((s,i)=>{if(s.conn)send(s.conn,{t:'lobby',l:lobbyFor(i)})});renderLobby()}
 function hostOnData(conn,d){
   conn.lastSeen=Date.now();
@@ -428,7 +430,7 @@ function hostStart(){
 function beginHostGame(seats){
   abortEngine();resetTable();
   shuffle(seats); // placement aléatoire autour de la table à chaque partie
-  ME=seats.findIndex(s=>s.kind==='local');engNew(seats);wireHostHooks();
+  ME=seats.findIndex(s=>s.kind==='local');engNew(seats,NET.mode);wireHostHooks();
   E.players.forEach(p=>{if(p.peer)send(p.peer,{t:'start',seat:p.i})});
   hideScreens();updateNetPill();
   engRun();
@@ -526,6 +528,9 @@ function renderLobby(){
   const host=MODE==='host';
   const L=host?lobbyFor(0):NET.lobby;if(!L)return;
   $('#lob-codecard').hidden=!host;$('#lob-wait').hidden=host;
+  const md=modeOf(L.mode);
+  $('#lob-mode').innerHTML=`<span class="k">MODE</span><b class="ransom">${ransom(md.name,3)}</b><button class="btn" type="button" id="btn-lob-rules"><span>RÈGLES</span></button>`;
+  $('#btn-lob-rules').onclick=()=>openRules(md.id);
   if(host){
     $('#lob-code').innerHTML=ransom(L.code,4);
     const link=shareLink(L.code);$('#lob-link').textContent=link;
@@ -547,6 +552,28 @@ function renderLobby(){
   $('#btn-lobby-go').hidden=!host;
   const n=L.slots.length;
   $('#lob-note').textContent=host?(n<4?`${n} joueur${n>1?'s':''} · ${4-n} place${4-n>1?'s':''} pour l’IA si tu lances maintenant.`:'Table complète. Lance quand tout le monde est prêt.'):'Choisis ton personnage. L’hôte lance la partie quand il veut.';
+}
+
+/* ---------- règles & choix du mode ---------- */
+function openRules(id){
+  const m=modeOf(id||PICKED_MODE),tpl=document.getElementById('rules-'+m.id);
+  $('#rules-body').innerHTML=tpl?tpl.innerHTML:`<h2>${m.name}</h2><p>${m.pitch}</p>`;
+  $('#rules').hidden=false;$('#rules .panel').scrollTop=0;
+}
+function currentModeId(){return (V&&V.mode)||(MODE==='client'&&NET.lobby&&NET.lobby.mode)||(MODE==='host'&&NET.mode)||PICKED_MODE}
+function openModes(flow){
+  MODE_FLOW=flow;
+  $('#mode-for').textContent=flow==='solo'?'Partie solo contre 3 IA':'Nouveau salon en ligne';
+  $('#modes').innerHTML=MODES.map(m=>`<article class="modecard" style="--c:${m.color}">
+      <div class="mname ransom">${ransom(m.name,5)}</div>
+      <p class="mpitch">${m.pitch}</p>
+      <p class="mplayers">${m.players}</p>
+      <div class="row"><button class="btn red" data-go="${m.id}"><span>JOUER CE MODE</span></button><button class="btn dark" data-rules="${m.id}"><span>RÈGLES</span></button></div>
+    </article>`).join('')+`<article class="modecard soon" aria-disabled="true"><div class="mname">BIENTÔT</div><p class="mpitch">D’autres modes arrivent à la table.</p></article>`;
+  $('#modes').querySelectorAll('[data-rules]').forEach(b=>b.onclick=()=>{SFX.tick();openRules(b.dataset.rules)});
+  $('#modes').querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>{SFX.init();SFX.tick();PICKED_MODE=b.dataset.go;
+    if(MODE_FLOW==='solo')openSelect();else openProfile('host')});
+  showScreen('scr-mode');
 }
 
 /* ---------- écran profil (créer / rejoindre) ---------- */
@@ -585,16 +612,17 @@ function profileGo(){
   $('#titlecast').innerHTML=CHARS.map(c=>`<div><div class="rimx">${frameHTML(c)}</div></div>`).join('');
   $('#btn-sound').innerHTML=SND_ON;
   $('#btn-sound').onclick=()=>{SFX.init();SFX.on=!SFX.on;$('#btn-sound').innerHTML=SFX.on?SND_ON:SND_OFF};
-  const openRules=()=>{$('#rules').hidden=false};
-  $('#btn-rules').onclick=openRules;$('#btn-rules2').onclick=openRules;
+  $('#modehead').innerHTML=ransom('CHOISIS TON MODE',2);
+  $('#btn-rules').onclick=()=>openRules(currentModeId());$('#btn-rules2').onclick=()=>openRules(PICKED_MODE);
+  $('#btn-mode-back').onclick=()=>showScreen('scr-title');
   $('#btn-rclose').onclick=()=>{$('#rules').hidden=true};
   $('#rules').onclick=e=>{if(e.target.id==='rules')$('#rules').hidden=true};
-  $('#btn-solo').onclick=()=>{SFX.init();SFX.tick();openSelect()};
-  $('#btn-host').onclick=()=>{SFX.init();SFX.tick();openProfile('host')};
+  $('#btn-solo').onclick=()=>{SFX.init();SFX.tick();openModes('solo')};
+  $('#btn-host').onclick=()=>{SFX.init();SFX.tick();openModes('host')};
   $('#btn-join').onclick=()=>{SFX.init();SFX.tick();openProfile('join')};
-  $('#btn-back').onclick=()=>showScreen('scr-title');
+  $('#btn-back').onclick=()=>showScreen('scr-mode');
   $('#btn-go').onclick=()=>{if(chosen==null)return;SFX.init();wipe();setTimeout(()=>startSolo(chosen),320)};
-  $('#btn-prof-back').onclick=()=>{if(MODE==='client'||MODE==='host')toMenu();else showScreen('scr-title')};
+  $('#btn-prof-back').onclick=()=>{if(MODE==='client'||MODE==='host')toMenu();else showScreen(PROFILE==='host'?'scr-mode':'scr-title')};
   $('#scr-profile').addEventListener('submit',e=>{e.preventDefault();profileGo()});
   $('#f-code').addEventListener('input',e=>{e.target.value=e.target.value.toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,4)});
   $('#btn-lobby-go').onclick=()=>{SFX.init();wipe();setTimeout(hostStart,320)};
@@ -610,7 +638,7 @@ function profileGo(){
   window.addEventListener('beforeunload',e=>{if(MODE==='host'&&E&&!E.over){e.preventDefault();e.returnValue=''}});
   window.addEventListener('pagehide',()=>{if(MODE==='client'&&NET.conn)send(NET.conn,{t:'leave'});if(MODE==='host')[...(E?E.players.map(p=>p.peer):[]),...NET.slots.map(s=>s.conn)].forEach(c=>c&&send(c,{t:'bye'}))});
   // fond de table derrière l'écran titre
-  engNew([0,1,2,3].map(c=>({name:CHARS[c].name,ci:c,kind:'ai'})));E.round=1;V=stateFor(-1);ME=0;V.hand=[];renderAll();V=null;E=null;BUILT=false;
+  engNew([0,1,2,3].map(c=>({name:CHARS[c].name,ci:c,kind:'ai'})));E.round=1;V=stateFor(-1);ME=0;V.hand=[];renderAll();V=null;E=null;BUILT=false;$('#modepill').hidden=true;
   const m=location.hash.replace('#','').toUpperCase();
   if(/^[A-Z0-9]{4}$/.test(m))openProfile('join',m);
 })();
