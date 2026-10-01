@@ -462,6 +462,9 @@ body{overflow:clip}
 @keyframes bump{0%{transform:rotate(6deg) scale(1.5)}100%{transform:rotate(6deg) scale(1)}}
 .seat.turn .hcount{background:var(--brass)}
 @media (max-aspect-ratio:4/5){.hcount{top:-6px;right:-6px;font-size:15px;padding:1px 6px 1px 4px}}
+/* éléments décoratifs : ne jamais intercepter les appuis (le tampon ÉLIMINÉ invisible recouvrait la 1re carte sur mobile) */
+.stamp,.turn-tag,.hcount,.frame::before,.frame::after{pointer-events:none}
+.seat:not(.dead) .stamp{visibility:hidden}
 </style>
 </head>
 <body>
