@@ -59,9 +59,9 @@ function buildSeats(){
   for(let i=0;i<4;i++){
     const p=VP(i),ch=CHARS[p.ci],el=seatEl(i);
     el.className='seat';el.dataset.pos=posOf(i);el.style.setProperty('--c',ch.c);
-    el.innerHTML=`<div class="fbox"><span class="turn-tag"></span><div class="rim">${frameHTML(ch)}</div><div class="stamp">ÉLIMINÉ</div></div>
+    el.innerHTML=`<div class="fbox"><span class="turn-tag"></span><div class="rim">${frameHTML(ch)}</div><div class="stamp">ÉLIMINÉ</div><div class="hcount" hidden><i></i><b></b></div></div>
       <div class="plate"><span class="pname"></span></div>
-      <div class="meta"><div class="gun"></div><span class="risk"></span><div class="cards"></div></div>
+      <div class="meta"><div class="gun"></div><span class="risk"></span></div>
       <button class="kickbtn" hidden>Remplacer par une IA</button>`;
     el.onclick=e=>{if(el.classList.contains('targetable')&&UIS.onTarget)UIS.onTarget(i)};
     el.querySelector('.kickbtn').onclick=e=>{e.stopPropagation();askKick(i)};
@@ -81,7 +81,9 @@ function renderSeat(i){
   const r=el.querySelector('.risk'),rk=1/(6-p.fired);
   r.textContent=p.alive?`${Math.round(rk*100)} %`:'—';r.classList.toggle('hot',rk>=.34);
   r.title='Chance que le prochain tir de cette arme soit réel';
-  el.querySelector('.cards').innerHTML=i===ME?'':Array.from({length:p.n},()=>'<i class="mini"></i>').join('');
+  const hc=el.querySelector('.hcount');hc.hidden=!p.alive||V.over;
+  if(!hc.hidden){const nb=hc.querySelector('b');if(nb.textContent!==String(p.n)){nb.textContent=p.n;hc.classList.remove('bump');void hc.offsetWidth;hc.classList.add('bump')}
+    hc.classList.toggle('empty',!p.n);hc.title=`${p.n} carte${p.n>1?'s':''} en main`;hc.setAttribute('aria-label',hc.title)}
   el.querySelector('.kickbtn').hidden=!(MODE==='host'&&p.rm&&!V.over);
 }
 function renderHand(){
@@ -194,7 +196,7 @@ function say(i,text,ms=2300){
   const b=document.createElement('div');b.className='bubble';b.dataset.p=i;b.textContent=text;$('#bubbles').appendChild(b);
   const bw=b.offsetWidth,bh=b.offsetHeight,W=innerWidth,H=innerHeight,portrait=W<H*.8,pos=posOf(i);
   let x,y;
-  if(pos==='bottom'){x=r.right+10;y=r.top-bh*.4}
+  if(pos==='bottom'){x=r.left;y=r.top-bh-32}
   else if(portrait){x=r.left;y=r.bottom+50}
   else if(pos==='left'){x=r.right+12;y=r.top+8}
   else if(pos==='right'){x=r.left-bw-12;y=r.top+8}

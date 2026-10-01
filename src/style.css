@@ -105,8 +105,6 @@ button:focus-visible,.card:focus-visible,.pick:focus-visible{outline:3px solid v
 .gun b.spent{background:transparent;box-shadow:0 0 0 1px #6c5a5f}
 .risk{font-weight:700;font-size:14px;min-width:3.2em;text-align:right}
 .risk.hot{color:var(--blood)}
-.cards{display:flex;gap:2px;min-width:30px}
-.cards .mini{width:11px;height:15px;background:var(--ink);border:1.5px solid var(--paper);box-shadow:inset 0 0 0 2px var(--blood)}
 .turn-tag{position:absolute;top:-14px;left:50%;transform:translateX(-50%) skew(-12deg);background:var(--brass);color:var(--ink);font-family:var(--f-display);font-size:13px;padding:0 10px;letter-spacing:.08em;opacity:0;transition:opacity .2s;z-index:3;white-space:nowrap}
 .seat.turn .turn-tag{opacity:1;animation:bob 1s ease-in-out infinite}
 .seat.turn .fbox{transform:scale(1.06)}
@@ -275,7 +273,6 @@ button:focus-visible,.card:focus-visible,.pick:focus-visible{outline:3px solid v
   .seat .meta{gap:5px;padding:2px 5px}
   .gun b{width:7px;height:7px}
   .risk{font-size:12px;min-width:2.6em}
-  .cards{display:none}
   .plate{font-size:12px;padding:1px 7px}
   .table{top:47%;width:calc(100% - 32px);max-width:480px}
   .me{flex-wrap:wrap;gap:8px}
@@ -441,3 +438,13 @@ body{overflow:clip}
   #hand.many .card{flex:1 1 0;min-width:0;width:auto;max-width:var(--cw)}
   #hand.many .card .lbl{font-size:11px}
 }
+
+/* nombre de cartes en main : badge sur le portrait de chaque joueur */
+.hcount{position:absolute;top:-8px;right:-10px;z-index:3;display:flex;align-items:center;gap:4px;background:var(--paper);color:var(--ink);padding:2px 8px 2px 5px;transform:rotate(6deg);box-shadow:3px 3px 0 var(--ink);font-family:var(--f-display);font-size:clamp(16px,2.4vh,22px);line-height:1;font-variant-numeric:tabular-nums}
+.hcount i{width:.55em;height:.78em;border-radius:2px;background:repeating-linear-gradient(45deg,var(--blood) 0 2px,var(--ink) 2px 4px);border:2px solid var(--ink);transform:rotate(-10deg);flex:none;margin-right:1px}
+.hcount.empty{background:#4a3f43;color:var(--muted)}
+.hcount.empty i{opacity:.5}
+.hcount.bump{animation:bump .35s cubic-bezier(.3,1.6,.5,1)}
+@keyframes bump{0%{transform:rotate(6deg) scale(1.5)}100%{transform:rotate(6deg) scale(1)}}
+.seat.turn .hcount{background:var(--brass)}
+@media (max-aspect-ratio:4/5){.hcount{top:-6px;right:-6px;font-size:15px;padding:1px 6px 1px 4px}}
