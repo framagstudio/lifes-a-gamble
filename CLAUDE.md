@@ -15,6 +15,7 @@ Jeu de bluff et de roulette russe dans un bar, au style graphique inspiré de Pe
 | `src/style.css` | Tout le CSS (thème sombre unique, mise en page bureau et téléphone) |
 | `src/body.html` | Le balisage : scène du bar, écrans (titre, solo, profil, salon, fin), fenêtre modale, règles |
 | `src/core.js` | Données (personnages, cartes), **moteur de jeu** et **IA**. Ne touche pas au DOM, ce qui permet de le tester dans Node |
+| `src/music.js` | Musique des menus : thème original « Last Call » (acid-jazz), synthétisé en WebAudio, joué en boucle du menu jusqu'au lancement d'une partie |
 | `src/ui.js` | Rendu, animations, sons (WebAudio), écrans, **réseau** (hôte et client PeerJS) |
 
 ## Architecture
@@ -69,6 +70,11 @@ Jeu de bluff et de roulette russe dans un bar, au style graphique inspiré de Pe
 - `aiShouldAccuse` compare l'espérance d'accuser et celle de laisser passer. Elle tient compte du risque de sa propre arme, du Maître, du Chaos et de la qualité de sa main.
 - Classic Liar : `estimateClassic` est une estimation pondérée (bayésienne). Elle tire des mains de 5 cartes, puis pondère chaque main selon la probabilité qu'elle produise exactement le nombre de cartes posées, en disant vrai ou en bluffant. `aiChooseClassic` pose surtout la vérité et bluffe selon la personnalité.
 - Les personnalités (`bluff`, `aggr`, `speed`) sont définies par personnage dans `CHARS`.
+
+## Musique
+
+- `Music.start()` et `Music.stop()` sont appelés dans `ui.js` : la musique démarre au premier appui (contrainte des navigateurs), s'arrête dans `startSolo`, `beginHostGame` et à la réception de `start` côté client, puis reprend dans `toMenu`. Le bouton `#btn-music` permet de couper le son sur les écrans de menu.
+- Le créateur voulait « Life Will Change » de Persona 5. C'est impossible (œuvre protégée), donc on ne l'imite pas : le thème est une composition originale dans le même genre.
 
 ## Personnages
 

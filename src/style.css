@@ -449,3 +449,7 @@ body{overflow:clip}
 /* éléments décoratifs : ne jamais intercepter les appuis (le tampon ÉLIMINÉ invisible recouvrait la 1re carte sur mobile) */
 .stamp,.turn-tag,.hcount,.frame::before,.frame::after{pointer-events:none}
 .seat:not(.dead) .stamp{visibility:hidden}
+
+/* bouton son visible sur les écrans de menu (la barre du jeu est cachée derrière) */
+#btn-music{position:fixed;top:calc(8px + env(safe-area-inset-top,0px));right:16px;z-index:95;display:none}
+body:has(.screen:not([hidden]):not(#modal)) #btn-music{display:grid}

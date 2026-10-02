@@ -11,6 +11,9 @@ out=f"""{r('head.html')}<style>{r('style.css')}</style>
 {r('core.js')}
 </script>
 <script>
+{r('music.js')}
+</script>
+<script>
 {r('ui.js')}
 </script>
 </body>

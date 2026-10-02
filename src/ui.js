@@ -311,7 +311,7 @@ function toMenu(){
   if(MODE==='client')clientShutdown();
   MODE=null;resetTable();updateNetPill();$('#modepill').hidden=true;
   history.replaceState(null,'',location.pathname);
-  showScreen('scr-title');
+  showScreen('scr-title');Music.start();
 }
 function askKick(i){
   if(MODE!=='host'||!E)return;
@@ -329,7 +329,7 @@ function wireHostHooks(){
 /* ---------- SOLO ---------- */
 function startSolo(ci){
   abortEngine();resetTable();
-  MODE='solo';ME=0;soloChar=ci;
+  MODE='solo';ME=0;soloChar=ci;Music.stop();
   const others=shuffle([0,1,2,3].filter(c=>c!==ci));
   engNew([{name:'Toi',ci,kind:'local'},...others.map(c=>({name:CHARS[c].name,ci:c,kind:'ai'}))],PICKED_MODE);
   wireHostHooks();hideScreens();updateNetPill();
@@ -449,7 +449,7 @@ function hostStart(){
   beginHostGame(seats);
 }
 function beginHostGame(seats){
-  abortEngine();resetTable();
+  abortEngine();resetTable();Music.stop();
   shuffle(seats); // placement aléatoire autour de la table à chaque partie
   ME=seats.findIndex(s=>s.kind==='local');engNew(seats,NET.mode);wireHostHooks();
   E.players.forEach(p=>{if(p.peer)send(p.peer,{t:'start',seat:p.i})});
@@ -518,7 +518,7 @@ function clientOnData(d){
     case 'ping':send(NET.conn,{t:'pong'});break;
     case 'lobby':NET.lobby=d.l;if($('#scr-lobby').hidden&&!E_LIKE())showScreen('scr-lobby');renderLobby();updateNetPill();break;
     case 'reject':NET.leaving=true;clientShutdown();MODE=null;showScreen('scr-profile');profileErr(d.why||'Accès refusé.');break;
-    case 'start':closeModal();hideEnd();resetTable();ME=d.seat|0;hideScreens();updateNetPill();break;
+    case 'start':closeModal();hideEnd();resetTable();Music.stop();ME=d.seat|0;hideScreens();updateNetPill();break;
     case 'state':V=d.s;renderAll();break;
     case 'ev':onEvent(d.ev);break;
     case 'ask':if(V)onAsk(d.kind,d.data,d.ms,v=>send(NET.conn,{t:'answer',v}),v=>send(NET.conn,{t:'aiming',v}));break;
@@ -632,7 +632,13 @@ function profileGo(){
   $('#lobhead').innerHTML=ransom('LE SALON',9);
   $('#titlecast').innerHTML=CHARS.map(c=>`<div><div class="rimx">${frameHTML(c)}</div></div>`).join('');
   $('#btn-sound').innerHTML=SND_ON;
-  $('#btn-sound').onclick=()=>{SFX.init();SFX.on=!SFX.on;$('#btn-sound').innerHTML=SFX.on?SND_ON:SND_OFF};
+  const setSnd=on=>{SFX.init();SFX.on=on;$('#btn-sound').innerHTML=$('#btn-music').innerHTML=on?SND_ON:SND_OFF;Music.setSound(on)};
+  $('#btn-music').innerHTML=SND_ON;
+  $('#btn-sound').onclick=()=>setSnd(!SFX.on);
+  $('#btn-music').onclick=e=>{e.stopPropagation();setSnd(!SFX.on)};
+  /* la musique des menus démarre au premier appui (les navigateurs bloquent le son avant) */
+  const firstTouch=()=>{SFX.init();if(!MODE||(!V&&!E))Music.start();removeEventListener('pointerdown',firstTouch,true);removeEventListener('keydown',firstTouch,true)};
+  addEventListener('pointerdown',firstTouch,true);addEventListener('keydown',firstTouch,true);
   $('#modehead').innerHTML=ransom('CHOISIS TON MODE',2);
   $('#btn-rules').onclick=()=>openRules(currentModeId());
   $('#btn-mode-back').onclick=()=>showScreen('scr-title');
