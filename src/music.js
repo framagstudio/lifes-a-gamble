@@ -90,8 +90,7 @@ const Music=(()=>{
     // piano électrique
     KEYS.forEach(([p,d])=>{if(p===st)keys(t,voicing,d)});
     // thème
-    if(sec===1)LEAD.forEach(([p,m,d])=>{if(p===inSec)lead(t,m,d)});
-    else STAB.forEach(([p,ns])=>{if(p===inSec&&bar===3)brass(t,ns)});
+    // (thème de saxo et relances de cuivres retirés à la demande du créateur : la basse porte le morceau)
   }
   function tick(){
     if(!playing)return;
@@ -105,7 +104,7 @@ const Music=(()=>{
     wantOn=true;
     if(typeof SFX==='undefined'||!SFX.on)return;
     if(!init())return;
-    if(ctx.state==='suspended')ctx.resume();
+    if(ctx.state!=='running')ctx.resume().catch(()=>{});
     if(playing)return;
     playing=true;step=0;nextT=ctx.currentTime+.08;
     out.gain.cancelScheduledValues(ctx.currentTime);out.gain.setValueAtTime(out.gain.value,ctx.currentTime);out.gain.linearRampToValueAtTime(.24,ctx.currentTime+.6);

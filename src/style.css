@@ -453,3 +453,16 @@ body{overflow:clip}
 /* bouton son visible sur les écrans de menu (la barre du jeu est cachée derrière) */
 #btn-music{position:fixed;top:calc(8px + env(safe-area-inset-top,0px));right:16px;z-index:95;display:none}
 body:has(.screen:not([hidden]):not(#modal)) #btn-music{display:grid}
+
+/* écran d'entrée : récupère le premier geste pour activer le son */
+#splash{position:fixed;inset:0;z-index:120;background:var(--ink);display:grid;place-items:center;cursor:pointer;padding-inline:16px;transition:opacity .4s,transform .45s cubic-bezier(.7,0,.3,1)}
+#splash::before{content:"";position:absolute;inset:-20%;background:repeating-linear-gradient(-25deg,transparent 0 60px,rgba(227,18,43,.12) 60px 120px),radial-gradient(circle at 70% 30%,rgba(227,18,43,.5),transparent 55%);pointer-events:none}
+#splash .sp-in{position:relative;display:flex;flex-direction:column;align-items:center;gap:clamp(18px,4vh,36px)}
+#splash .logo{font-size:clamp(40px,min(12vw,11vh),130px);text-align:center;line-height:1.15}
+#splash .sp-tap{white-space:nowrap;font-family:var(--f-display);font-size:clamp(18px,min(5.4vw,3.4vh),32px);letter-spacing:.08em;background:var(--blood);color:var(--paper);padding:.25em 1em;transform:skew(-12deg);box-shadow:6px 6px 0 var(--paper);animation:pulse 1.2s ease-in-out infinite}
+#splash .sp-tap>span{display:inline-block;transform:skew(12deg)}
+#splash .sp-note{font-weight:700;font-style:italic;color:var(--muted);font-size:15px}
+#splash.out{opacity:0;transform:translateX(-30%) skewX(-10deg)}
+#splash:focus-visible{outline:none}
+#splash:focus-visible .sp-tap{outline:3px solid var(--brass);outline-offset:4px}
+@keyframes pulse{50%{transform:skew(-12deg) scale(1.06)}}

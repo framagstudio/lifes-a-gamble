@@ -73,7 +73,9 @@ Jeu de bluff et de roulette russe dans un bar, au style graphique inspiré de Pe
 
 ## Musique
 
-- `Music.start()` et `Music.stop()` sont appelés dans `ui.js` : la musique démarre au premier appui (contrainte des navigateurs), s'arrête dans `startSolo`, `beginHostGame` et à la réception de `start` côté client, puis reprend dans `toMenu`. Le bouton `#btn-music` permet de couper le son sur les écrans de menu.
+- Le morceau ne garde que la batterie, la basse et le piano électrique. Le saxo et les cuivres aigus ont été retirés à la demande du créateur.
+- À l'ouverture, un écran « Appuie pour entrer » (`#splash`) récupère le premier geste, indispensable pour que les navigateurs autorisent le son, et lance la musique. `unlock` réessaie à chaque geste tant que l'audio n'est pas débloqué (iOS).
+- `Music.start()` et `Music.stop()` sont appelés dans `ui.js` : la musique démarre au premier appui, s'arrête dans `startSolo`, `beginHostGame` et à la réception de `start` côté client, puis reprend dans `toMenu`. Le bouton `#btn-music` permet de couper le son sur les écrans de menu.
 - Le créateur voulait « Life Will Change » de Persona 5. C'est impossible (œuvre protégée), donc on ne l'imite pas : le thème est une composition originale dans le même genre.
 
 ## Personnages

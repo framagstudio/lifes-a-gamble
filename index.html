@@ -467,6 +467,19 @@ body{overflow:clip}
 /* bouton son visible sur les écrans de menu (la barre du jeu est cachée derrière) */
 #btn-music{position:fixed;top:calc(8px + env(safe-area-inset-top,0px));right:16px;z-index:95;display:none}
 body:has(.screen:not([hidden]):not(#modal)) #btn-music{display:grid}
+
+/* écran d'entrée : récupère le premier geste pour activer le son */
+#splash{position:fixed;inset:0;z-index:120;background:var(--ink);display:grid;place-items:center;cursor:pointer;padding-inline:16px;transition:opacity .4s,transform .45s cubic-bezier(.7,0,.3,1)}
+#splash::before{content:"";position:absolute;inset:-20%;background:repeating-linear-gradient(-25deg,transparent 0 60px,rgba(227,18,43,.12) 60px 120px),radial-gradient(circle at 70% 30%,rgba(227,18,43,.5),transparent 55%);pointer-events:none}
+#splash .sp-in{position:relative;display:flex;flex-direction:column;align-items:center;gap:clamp(18px,4vh,36px)}
+#splash .logo{font-size:clamp(40px,min(12vw,11vh),130px);text-align:center;line-height:1.15}
+#splash .sp-tap{white-space:nowrap;font-family:var(--f-display);font-size:clamp(18px,min(5.4vw,3.4vh),32px);letter-spacing:.08em;background:var(--blood);color:var(--paper);padding:.25em 1em;transform:skew(-12deg);box-shadow:6px 6px 0 var(--paper);animation:pulse 1.2s ease-in-out infinite}
+#splash .sp-tap>span{display:inline-block;transform:skew(12deg)}
+#splash .sp-note{font-weight:700;font-style:italic;color:var(--muted);font-size:15px}
+#splash.out{opacity:0;transform:translateX(-30%) skewX(-10deg)}
+#splash:focus-visible{outline:none}
+#splash:focus-visible .sp-tap{outline:3px solid var(--brass);outline-offset:4px}
+@keyframes pulse{50%{transform:skew(-12deg) scale(1.06)}}
 </style>
 </head>
 <body>
@@ -670,6 +683,7 @@ body:has(.screen:not([hidden]):not(#modal)) #btn-music{display:grid}
   <ul><li>6 chambres, 1 balle réelle. Chaque tir à blanc rapproche la balle : 1/6, 1/5, 1/4…</li><li>Après une balle réelle, l’arme est rechargée.</li><li>Pour tirer, touche ta cible puis confirme. Tout le monde voit qui tu vises. Impossible de se viser soi-même.</li></ul>
 </template>
 <button class="ibtn" id="btn-music" aria-label="Couper ou remettre la musique" title="Musique"></button>
+<div id="splash" role="button" tabindex="0" aria-label="Appuie pour entrer"></div>
 <div id="wipe"></div>
 
 <script>
@@ -1279,8 +1293,7 @@ const Music=(()=>{
     // piano électrique
     KEYS.forEach(([p,d])=>{if(p===st)keys(t,voicing,d)});
     // thème
-    if(sec===1)LEAD.forEach(([p,m,d])=>{if(p===inSec)lead(t,m,d)});
-    else STAB.forEach(([p,ns])=>{if(p===inSec&&bar===3)brass(t,ns)});
+    // (thème de saxo et relances de cuivres retirés à la demande du créateur : la basse porte le morceau)
   }
   function tick(){
     if(!playing)return;
@@ -1294,7 +1307,7 @@ const Music=(()=>{
     wantOn=true;
     if(typeof SFX==='undefined'||!SFX.on)return;
     if(!init())return;
-    if(ctx.state==='suspended')ctx.resume();
+    if(ctx.state!=='running')ctx.resume().catch(()=>{});
     if(playing)return;
     playing=true;step=0;nextT=ctx.currentTime+.08;
     out.gain.cancelScheduledValues(ctx.currentTime);out.gain.setValueAtTime(out.gain.value,ctx.currentTime);out.gain.linearRampToValueAtTime(.24,ctx.currentTime+.6);
@@ -1962,9 +1975,20 @@ function profileGo(){
   $('#btn-music').innerHTML=SND_ON;
   $('#btn-sound').onclick=()=>setSnd(!SFX.on);
   $('#btn-music').onclick=e=>{e.stopPropagation();setSnd(!SFX.on)};
-  /* la musique des menus démarre au premier appui (les navigateurs bloquent le son avant) */
-  const firstTouch=()=>{SFX.init();if(!MODE||(!V&&!E))Music.start();removeEventListener('pointerdown',firstTouch,true);removeEventListener('keydown',firstTouch,true)};
-  addEventListener('pointerdown',firstTouch,true);addEventListener('keydown',firstTouch,true);
+  /* Les navigateurs interdisent le son tant qu'on n'a pas touché la page : un écran « Appuie pour entrer »
+     récupère ce premier geste et lance la musique. Filet de sécurité : on réessaie à chaque geste
+     (clic, toucher, touche) tant que l'audio n'est pas réellement débloqué (iOS l'exige sur touchend/click). */
+  const inMenus=()=>!V;
+  const unlock=()=>{SFX.init();const c=SFX.ctx;if(!c)return;
+    if(c.state!=='running')c.resume().catch(()=>{});
+    if(inMenus())Music.start();
+    if(c.state==='running'&&Music.playing!==false)['pointerdown','touchend','click','keydown'].forEach(ev=>removeEventListener(ev,unlock,true))};
+  ['pointerdown','touchend','click','keydown'].forEach(ev=>addEventListener(ev,unlock,true));
+  const splash=$('#splash');
+  splash.innerHTML=`<div class="sp-in"><div class="logo ransom">${ransom("LIFE'S A",1)}<br>${ransom('GAMBLE',4)}</div><div class="sp-tap"><span>APPUIE POUR ENTRER</span></div><div class="sp-note">♪ son activé</div></div>`;
+  const enter=e=>{e.preventDefault();unlock();splash.classList.add('out');setTimeout(()=>splash.hidden=true,450)};
+  splash.addEventListener('click',enter);
+  addEventListener('keydown',e=>{if(!splash.hidden&&!splash.classList.contains('out')&&(e.key==='Enter'||e.key===' '))enter(e)});
   $('#modehead').innerHTML=ransom('CHOISIS TON MODE',2);
   $('#btn-rules').onclick=()=>openRules(currentModeId());
   $('#btn-mode-back').onclick=()=>showScreen('scr-title');

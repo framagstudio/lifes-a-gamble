@@ -636,9 +636,20 @@ function profileGo(){
   $('#btn-music').innerHTML=SND_ON;
   $('#btn-sound').onclick=()=>setSnd(!SFX.on);
   $('#btn-music').onclick=e=>{e.stopPropagation();setSnd(!SFX.on)};
-  /* la musique des menus démarre au premier appui (les navigateurs bloquent le son avant) */
-  const firstTouch=()=>{SFX.init();if(!MODE||(!V&&!E))Music.start();removeEventListener('pointerdown',firstTouch,true);removeEventListener('keydown',firstTouch,true)};
-  addEventListener('pointerdown',firstTouch,true);addEventListener('keydown',firstTouch,true);
+  /* Les navigateurs interdisent le son tant qu'on n'a pas touché la page : un écran « Appuie pour entrer »
+     récupère ce premier geste et lance la musique. Filet de sécurité : on réessaie à chaque geste
+     (clic, toucher, touche) tant que l'audio n'est pas réellement débloqué (iOS l'exige sur touchend/click). */
+  const inMenus=()=>!V;
+  const unlock=()=>{SFX.init();const c=SFX.ctx;if(!c)return;
+    if(c.state!=='running')c.resume().catch(()=>{});
+    if(inMenus())Music.start();
+    if(c.state==='running'&&Music.playing!==false)['pointerdown','touchend','click','keydown'].forEach(ev=>removeEventListener(ev,unlock,true))};
+  ['pointerdown','touchend','click','keydown'].forEach(ev=>addEventListener(ev,unlock,true));
+  const splash=$('#splash');
+  splash.innerHTML=`<div class="sp-in"><div class="logo ransom">${ransom("LIFE'S A",1)}<br>${ransom('GAMBLE',4)}</div><div class="sp-tap"><span>APPUIE POUR ENTRER</span></div><div class="sp-note">♪ son activé</div></div>`;
+  const enter=e=>{e.preventDefault();unlock();splash.classList.add('out');setTimeout(()=>splash.hidden=true,450)};
+  splash.addEventListener('click',enter);
+  addEventListener('keydown',e=>{if(!splash.hidden&&!splash.classList.contains('out')&&(e.key==='Enter'||e.key===' '))enter(e)});
   $('#modehead').innerHTML=ransom('CHOISIS TON MODE',2);
   $('#btn-rules').onclick=()=>openRules(currentModeId());
   $('#btn-mode-back').onclick=()=>showScreen('scr-title');
